@@ -1,2 +1,5 @@
 .trash/**
 .env
+dataBase.txt
+go.mod
+go.sum
