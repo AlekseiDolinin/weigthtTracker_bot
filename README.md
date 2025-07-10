@@ -1,4 +1,4 @@
-# weigthtTracker_bot
+# weigthtTracker_bot - в процессе разработки
 # t.me/MyWeightTrackerDAG_bot
 
 Описание проекта
