@@ -7,6 +7,8 @@ import (
 	"time"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const FileName = "dataBase.txt"
@@ -71,4 +73,30 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 		return records, fmt.Errorf("ошибка чтения файла: %v", err)
 	}
 	return
+}
+
+// отправляет в чат предыдущую запись о весе
+func PreviousEntry(chatID int64, bot *tgbotapi.BotAPI) error {
+	records, err := ReadRecords(int(chatID))
+	if err != nil {
+		msg := tgbotapi.NewMessage(chatID, "ошибка при чтении данных")
+		bot.Send(msg)
+	}
+	if records != nil {
+		record := records[len(records)-1]
+		preMsg := fmt.Sprintf("Предыдущая запись создана %d %s %d в %d:%d \nВаш вес: %.2f кг",
+			record.GetTime().Day(),
+			record.GetTime().Month(),
+			record.GetTime().Year(),
+			record.GetTime().Hour(),
+			record.GetTime().Minute(),
+			record.GetWeight(),
+		)
+		msg := tgbotapi.NewMessage(chatID, preMsg)
+		bot.Send(msg)
+	} else {
+		msg := tgbotapi.NewMessage(chatID, "Вы еще не записывали свой вес")
+		bot.Send(msg)
+	}
+	return err
 }

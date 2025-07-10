@@ -32,9 +32,6 @@ func main() {
 	//получаем канал обновлений
 	updates := bot.GetUpdatesChan(u)
 
-	// отправляем приветственное сообщение со списком команд
-	//в разработке
-
 	//заглушка сохранения веса
 	var weightInput float64 //заменить на сохранение в базе данных
 
@@ -60,21 +57,7 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/weight"):
-			records, err := storage.ReadRecords(int(chatID))
-			if err != nil {
-				msg := tgbotapi.NewMessage(chatID, "ошибка при чтении данных")
-				bot.Send(msg)
-				continue
-			}
-
-			if records != nil {
-				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес: %.2f кг", records[len(records)-1].GetWeight()))
-				bot.Send(msg)
-			} else {
-				msg := tgbotapi.NewMessage(chatID, "Вы еще не записывали свой вес")
-				bot.Send(msg)
-			}
-
+			storage.PreviousEntry(chatID, bot)
 		case strings.EqualFold(text, "/help"):
 			msg := tgbotapi.NewMessage(chatID, messages.Help)
 			bot.Send(msg)
@@ -83,7 +66,6 @@ func main() {
 			bot.Send(msg)
 		case weightInput > 0:
 			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now()))
-			//weight = weightInput
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес %.2f кг записан", weightInput))
 			weightInput = 0
 			bot.Send(msg)
