@@ -47,7 +47,7 @@ func AddRecordToDB(r models.Record) (err error) {
 }
 
 // возвращает слайс записей из файла f
-func ReadRecords(chatID int) (records []string, err error) {
+func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	// Проверяем существует ли файл
 	if !fileExists(FileName) {
@@ -62,8 +62,8 @@ func ReadRecords(chatID int) (records []string, err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if struc := parse.ParseRecord(scanner.Text()).GetId(); struc == chatID {
-			records = append(records, scanner.Text())
+		if struc := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID {
+			records = append(records, struc)
 		}
 	}
 

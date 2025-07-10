@@ -67,20 +67,14 @@ func main() {
 				continue
 			}
 
-			for _, record := range records {
-				msg := tgbotapi.NewMessage(chatID, record)
+			if records != nil {
+				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес: %.2f кг", records[len(records)-1].GetWeight()))
+				bot.Send(msg)
+			} else {
+				msg := tgbotapi.NewMessage(chatID, "Вы еще не записывали свой вес")
 				bot.Send(msg)
 			}
 
-			/*
-				if weight > 0 {
-					msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес: %.2f кг", weight))
-					bot.Send(msg)
-				} else {
-					msg := tgbotapi.NewMessage(chatID, "Вы еще не записывали свой вес")
-					bot.Send(msg)
-				}
-			*/
 		case strings.EqualFold(text, "/help"):
 			msg := tgbotapi.NewMessage(chatID, messages.Help)
 			bot.Send(msg)
