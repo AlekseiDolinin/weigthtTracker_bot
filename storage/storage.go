@@ -5,35 +5,11 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"weightTrack_bot/models"
+	"weightTrack_bot/parse"
 )
 
-type Record struct {
-	id int
-	//nickname string
-	weight float64
-	t      time.Time
-}
-
-func (r Record) getId() int {
-	return r.id
-}
-
-//func (r Record) getNickname() string {
-//	return r.nickname
-//}
-
-func (r Record) getWeight() int {
-	return int(r.weight)
-}
-
-func (r Record) getTime() time.Time {
-	return r.t
-}
-
-// возвращает экземпляр записи
-func NewRecord(id int /*nickname string,*/, weight float64) Record {
-	return Record{id: id /*nickname: nickname,*/, weight: weight, t: time.Now()}
-}
+const FileName = "dataBase.txt"
 
 // проверка существования файла
 func fileExists(filename string) bool {
@@ -42,17 +18,17 @@ func fileExists(filename string) bool {
 }
 
 // добавляет в файл f запись r
-func AddRecordToDB(r Record, filename string) (err error) {
+func AddRecordToDB(r models.Record) (err error) {
 	var file *os.File
 
 	//проверяем существует ли файл
-	if fileExists(filename) { //если существует - открываем
-		file, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0644)
+	if fileExists(FileName) { //если существует - открываем
+		file, err = os.OpenFile(FileName, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("ошибка открытия файла: %v", err)
 		}
 	} else { //если не существует - создаем
-		file, err = os.Create(filename)
+		file, err = os.Create(FileName)
 		if err != nil {
 			return fmt.Errorf("ошибка создания файла: %v", err)
 		}
@@ -60,7 +36,7 @@ func AddRecordToDB(r Record, filename string) (err error) {
 	defer file.Close()
 	//преобразует запись в строку
 	//record := string(rune(r.getId())) + ", " /*+ r.getNickname()*/ + string(rune(r.getWeight())) + ", " + r.getTime().String()
-	record := fmt.Sprintf("%d, %.2f, %s\n", r.id, r.weight, r.t.Format(time.RFC3339))
+	record := fmt.Sprintf("%d %.2f %s\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339))
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -71,14 +47,14 @@ func AddRecordToDB(r Record, filename string) (err error) {
 }
 
 // возвращает слайс записей из файла f
-func ReadRecords(filename string) (records []string, err error) {
+func ReadRecords(chatID int) (records []string, err error) {
 
 	// Проверяем существует ли файл
-	if !fileExists(filename) {
-		return nil, fmt.Errorf("файл не существует: %s", filename)
+	if !fileExists(FileName) {
+		return nil, fmt.Errorf("файл не существует: %s", FileName)
 	}
 
-	file, err := os.Open(filename)
+	file, err := os.Open(FileName)
 	if err != nil {
 		return records, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
@@ -86,7 +62,9 @@ func ReadRecords(filename string) (records []string, err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		records = append(records, scanner.Text())
+		if struc := parse.ParseRecord(scanner.Text()).GetId(); struc == chatID {
+			records = append(records, scanner.Text())
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

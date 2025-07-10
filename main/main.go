@@ -5,15 +5,17 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"weightTrack_bot/messages"
+	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
 	"weightTrack_bot/storage"
 )
 
-const fileName = "dataBase.txt"
+//const fileName = "dataBase.txt"
 
 func main() {
 
@@ -58,24 +60,14 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/weight"):
-			records, err := storage.ReadRecords(fileName)
+			records, err := storage.ReadRecords(int(chatID))
 			if err != nil {
-				fmt.Printf("ошибка чтения файла: %e", err)
-			}
-			//for record := range records {
-			//	fmt.Println(record)
-			//}
-
-			if err != nil {
-				log.Printf("Ошибка чтения файла: %v", err)
-				msg := tgbotapi.NewMessage(chatID, "Ошибка при чтении данных")
+				msg := tgbotapi.NewMessage(chatID, "ошибка при чтении данных")
 				bot.Send(msg)
 				continue
 			}
 
 			for _, record := range records {
-				//fmt.Println(record)
-				// Или отправляем сообщение с каждой записью
 				msg := tgbotapi.NewMessage(chatID, record)
 				bot.Send(msg)
 			}
@@ -96,7 +88,7 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.ErrCommand)
 			bot.Send(msg)
 		case weightInput > 0:
-			storage.AddRecordToDB(storage.NewRecord(int(chatID), weightInput), fileName)
+			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now()))
 			//weight = weightInput
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес %.2f кг записан", weightInput))
 			weightInput = 0
