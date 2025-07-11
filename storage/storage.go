@@ -7,8 +7,6 @@ import (
 	"time"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const FileName = "dataBase.txt"
@@ -38,7 +36,7 @@ func AddRecordToDB(r models.Record) (err error) {
 	defer file.Close()
 	//преобразует запись в строку
 	//record := string(rune(r.getId())) + ", " /*+ r.getNickname()*/ + string(rune(r.getWeight())) + ", " + r.getTime().String()
-	record := fmt.Sprintf("%d %.2f %s\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339))
+	record := fmt.Sprintf("%d %.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -64,7 +62,7 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if struc := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID {
+		if struc, err := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID && err == nil {
 			records = append(records, struc)
 		}
 	}
@@ -76,15 +74,15 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 }
 
 // отправляет в чат предыдущую запись о весе
-func PreviousEntry(chatID int64, bot *tgbotapi.BotAPI) error {
+func ShowPreviousEntry(chatID int64) (result string, err error) {
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
-		msg := tgbotapi.NewMessage(chatID, "ошибка при чтении данных")
-		bot.Send(msg)
+		result := "ошибка при чтении данных"
+		return result, err
 	}
 	if records != nil {
 		record := records[len(records)-1]
-		preMsg := fmt.Sprintf("Предыдущая запись создана %d %s %d в %d:%d \nВаш вес: %.2f кг",
+		result := fmt.Sprintf("Предыдущая запись создана %d %s %d в %02d:%02d \nВаш вес: %.2f кг",
 			record.GetTime().Day(),
 			record.GetTime().Month(),
 			record.GetTime().Year(),
@@ -92,11 +90,19 @@ func PreviousEntry(chatID int64, bot *tgbotapi.BotAPI) error {
 			record.GetTime().Minute(),
 			record.GetWeight(),
 		)
-		msg := tgbotapi.NewMessage(chatID, preMsg)
-		bot.Send(msg)
+		return result, nil
+
 	} else {
-		msg := tgbotapi.NewMessage(chatID, "Вы еще не записывали свой вес")
-		bot.Send(msg)
+		result = "Вы еще не записывали свой вес"
+		return result, err
 	}
-	return err
+}
+
+func DeletePreviousEntry(chatID int64) error {
+
+	return nil
+}
+
+func FindLastEntry(chatID int64) {
+
 }

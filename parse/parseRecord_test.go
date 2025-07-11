@@ -7,16 +7,16 @@ import (
 )
 
 func TestParseRecord(t *testing.T) {
-	value := "5218837036 58.00 2025-07-09T21:56:18+04:00"
+	value := "5218837036 58.00 2025-07-09T21:56:18+04:00 0"
 
 	expectedTime, err := time.Parse(time.RFC3339, "2025-07-09T21:56:18+04:00")
 	if err != nil {
 		t.Fatalf("Failed to parse expected time: %v", err)
 	}
 
-	want := models.NewRecord(5218837036, 58.0, expectedTime)
+	want := models.NewRecord(5218837036, 58.0, expectedTime, 0)
 
-	got := ParseRecord(value)
+	got, _ := ParseRecord(value)
 
 	// Сравниваем структуры поэлементно
 	if got.GetId() != want.GetId() {

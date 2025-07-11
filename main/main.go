@@ -57,7 +57,9 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/weight"):
-			storage.PreviousEntry(chatID, bot)
+			preMsg, _ := storage.ShowPreviousEntry(chatID)
+			msg := tgbotapi.NewMessage(chatID, preMsg)
+			bot.Send(msg)
 		case strings.EqualFold(text, "/help"):
 			msg := tgbotapi.NewMessage(chatID, messages.Help)
 			bot.Send(msg)
@@ -65,7 +67,7 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.ErrCommand)
 			bot.Send(msg)
 		case weightInput > 0:
-			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now()))
+			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now(), 0))
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес %.2f кг записан", weightInput))
 			weightInput = 0
 			bot.Send(msg)

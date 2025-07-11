@@ -5,9 +5,10 @@ import (
 )
 
 type Record struct {
-	id     int
-	weight float64
-	t      time.Time
+	id      int
+	weight  float64
+	t       time.Time
+	deleted int //0 - exist, 1 - deleted
 }
 
 func (r Record) GetId() int {
@@ -22,7 +23,11 @@ func (r Record) GetTime() time.Time {
 	return r.t
 }
 
+func (r Record) GetStatus() int {
+	return r.deleted
+}
+
 // возвращает экземпляр записи
-func NewRecord(id int, weight float64, t time.Time) Record {
-	return Record{id: id, weight: weight, t: t}
+func NewRecord(id int, weight float64, t time.Time, deleted int) Record {
+	return Record{id: id, weight: weight, t: t, deleted: deleted}
 }
