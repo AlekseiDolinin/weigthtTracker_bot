@@ -62,7 +62,7 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if struc, err := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID && err == nil {
+		if struc, _ := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID {
 			records = append(records, struc)
 		}
 	}
@@ -80,8 +80,10 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 		result := "ошибка при чтении данных"
 		return result, err
 	}
-	if records != nil {
-		record := records[len(records)-1]
+	//поиск последней неудаленной записи
+	record, position := FindLastEntry(records, 0)
+
+	if position != -1 {
 		result := fmt.Sprintf("Предыдущая запись создана %d %s %d в %02d:%02d \nВаш вес: %.2f кг",
 			record.GetTime().Day(),
 			record.GetTime().Month(),
@@ -98,7 +100,8 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 	}
 }
 
-func DeletePreviousEntry(chatID int64) error {
+// удаляет(deleted = 0)/восстанавливает(deleted = 1) последнюю запись
+func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
 	if err != nil {
 		panic(err)
@@ -109,13 +112,39 @@ func DeletePreviousEntry(chatID int64) error {
 	if err != nil {
 		return err
 	}
-	record := records[len(records)-1]
-	record.SetStatus(1)
-	recordStr := fmt.Sprintf("%d %.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), 1)
 
-	_, err = file.WriteAt([]byte(recordStr), int64(len(records)-1)*int64(len(recordStr))) // смещение длинна строки на количество строк
+	//поиск последней удаленной/неудаленной записи
+	record, position := FindLastEntry(records, delete)
+	if position == -1 {
+		return fmt.Errorf("отсутствуют записи")
+	}
+
+	switch delete {
+	case 0:
+		record.SetStatus(1)
+	case 1:
+		record.SetStatus(0)
+	}
+
+	recordStr := fmt.Sprintf("%d %.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
+
+	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение длинна строки на количество строк
 	if err != nil {
 		panic(err)
 	}
 	return nil
+}
+
+// ищет последнюю запись: deleted = 1 ищет последнюю удаленную, deleted = 0 - последнюю не удаленную
+func FindLastEntry(records []models.Record, deleted int) (record models.Record, position int) {
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].GetStatus() != deleted {
+			continue
+		} else {
+			record = records[i]
+			position = i
+			return record, position
+		}
+	}
+	return record, -1 //если не найдено
 }

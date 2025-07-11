@@ -27,7 +27,7 @@ func (r Record) GetStatus() int {
 	return r.deleted
 }
 
-func (r Record) SetStatus(delete int) {
+func (r *Record) SetStatus(delete int) {
 	r.deleted = delete
 }
 

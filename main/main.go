@@ -61,13 +61,23 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/delete"):
-			err := storage.DeletePreviousEntry(chatID)
+			err := storage.DeleteRestorePreviousEntry(chatID, 0)
 			if err != nil {
-				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка удаления %v", err))
+				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка удаления: %v", err))
+				bot.Send(msg)
+			} else {
+				msg := tgbotapi.NewMessage(chatID, "Предыдущая запись удалена")
 				bot.Send(msg)
 			}
-			msg := tgbotapi.NewMessage(chatID, "Предыдущая запись удалена")
-			bot.Send(msg)
+		case strings.EqualFold(text, "/restore"):
+			err := storage.DeleteRestorePreviousEntry(chatID, 1)
+			if err != nil {
+				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка восстановления: %v", err))
+				bot.Send(msg)
+			} else {
+				msg := tgbotapi.NewMessage(chatID, "Предыдущая запись восстановлена")
+				bot.Send(msg)
+			}
 		case strings.EqualFold(text, "/help"):
 			msg := tgbotapi.NewMessage(chatID, messages.Help)
 			bot.Send(msg)
