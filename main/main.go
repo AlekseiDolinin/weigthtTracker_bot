@@ -56,6 +56,16 @@ func main() {
 		case strings.EqualFold(text, "/start"):
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
+		case strings.EqualFold(text, "/showWeek"):
+			period, _ := storage.FindPeriod(chatID, 7)
+			preMsg := storage.ShowPeriod(period, 7)
+			msg := tgbotapi.NewMessage(chatID, preMsg)
+			bot.Send(msg)
+		case strings.EqualFold(text, "/showMonth"):
+			period, _ := storage.FindPeriod(chatID, 31)
+			preMsg := storage.ShowPeriod(period, 31)
+			msg := tgbotapi.NewMessage(chatID, preMsg)
+			bot.Send(msg)
 		case strings.EqualFold(text, "/weight"):
 			preMsg, _ := storage.ShowPreviousEntry(chatID)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
@@ -90,13 +100,13 @@ func main() {
 
 			diffWeight := weightInput - storedWeight
 			var preMsg string
-			if diffWeight > 0 {
-				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: +%.2f кг",
+			if diffWeight == 0 {
+				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %.2f кг",
 					weightInput,
 					diffWeight,
 				)
 			} else {
-				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %.2f кг",
+				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %+.2f кг",
 					weightInput,
 					diffWeight,
 				)

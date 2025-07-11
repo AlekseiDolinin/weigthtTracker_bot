@@ -35,7 +35,6 @@ func AddRecordToDB(r models.Record) (err error) {
 	}
 	defer file.Close()
 	//преобразует запись в строку
-	//record := string(rune(r.getId())) + ", " /*+ r.getNickname()*/ + string(rune(r.getWeight())) + ", " + r.getTime().String()
 	record := fmt.Sprintf("%d %05.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
 
 	//записывает строку в файл
@@ -84,7 +83,7 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 	record, position := FindLastEntry(records, 0)
 
 	if position != -1 {
-		result := fmt.Sprintf("Ваш вес: %.2f кг\nЗапись создана %d %s %d в %02d:%02d ",
+		result := fmt.Sprintf("Ваш вес: %.2f кг\nЗапись от %d %s %dг. %02d:%02d ",
 			record.GetWeight(),
 			record.GetTime().Day(),
 			parse.ParseMonth(record.GetTime().Month()),
@@ -102,16 +101,16 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 
 // удаляет(deleted = 0)/восстанавливает(deleted = 1) последнюю запись
 func DeleteRestorePreviousEntry(chatID int64, delete int) error {
+	records, err := ReadRecords(int(chatID))
+	if err != nil {
+		return err
+	}
+
 	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
-
-	records, err := ReadRecords(int(chatID))
-	if err != nil {
-		return err
-	}
 
 	//поиск последней удаленной/неудаленной записи
 	record, position := FindLastEntry(records, delete)
@@ -128,7 +127,7 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 
 	recordStr := fmt.Sprintf("%d %05.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
 
-	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение длинна строки на количество строк
+	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil {
 		panic(err)
 	}
@@ -150,12 +149,6 @@ func FindLastEntry(records []models.Record, deleted int) (record models.Record, 
 }
 
 func DiffWeight(chatID int64) (weight float64, err error) {
-	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
 		return 0.0, err
@@ -167,4 +160,63 @@ func DiffWeight(chatID int64) (weight float64, err error) {
 		return 0.0, fmt.Errorf("отсутствуют записи")
 	}
 	return record.GetWeight(), nil
+}
+
+// возвращает слайс средних данных показателей веса по дням за период
+func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err error) {
+	records, err := ReadRecords(int(chatID))
+	if err != nil {
+		return nil, err
+	}
+	var dayAVG float64
+	var countDays int
+	lastEntry, _ := FindLastEntry(records, 0)
+	currentDate := lastEntry.GetTime()
+
+	for i := len(records) - 1; i >= 0 && period > 0; i-- {
+		if records[i].GetStatus() != 0 {
+			continue
+		}
+		if currentDate.Year() == records[i].GetTime().Year() &&
+			currentDate.Month() == records[i].GetTime().Month() &&
+			currentDate.Day() == records[i].GetTime().Day() {
+
+			dayAVG += records[i].GetWeight()
+			countDays++
+		} else {
+			dayAVG /= float64(countDays)
+			result = append(result, models.NewAvgRecordsPeriod(dayAVG, currentDate))
+			currentDate = records[i].GetTime()
+			dayAVG = records[i].GetWeight()
+			countDays = 1
+			period--
+		}
+	}
+	dayAVG /= float64(countDays)
+	result = append(result, models.NewAvgRecordsPeriod(dayAVG, currentDate))
+	return result, err
+}
+
+// формирует форматироваанную строку из слайса средних данных по дням за период []models.AvgRecordsPeriod
+func ShowPeriod(result []models.AvgRecordsPeriod, period int) (s string) {
+	for i, rec := range result {
+		if i >= period {
+			continue
+		}
+
+		var diff float64
+		if i < len(result)-1 {
+			diff = rec.GetWeight() - result[i+1].GetWeight()
+		}
+
+		s += fmt.Sprintf("%02d. Вес: %05.2f | %+06.2f | %02d %s %d г.\n",
+			i+1,
+			rec.GetWeight(),
+			diff,
+			rec.GetTime().Day(),
+			parse.ParseMonth(rec.GetTime().Month()),
+			rec.GetTime().Year(),
+		)
+	}
+	return
 }
