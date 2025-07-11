@@ -99,10 +99,23 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 }
 
 func DeletePreviousEntry(chatID int64) error {
+	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
 
+	records, err := ReadRecords(int(chatID))
+	if err != nil {
+		return err
+	}
+	record := records[len(records)-1]
+	record.SetStatus(1)
+	recordStr := fmt.Sprintf("%d %.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), 1)
+
+	_, err = file.WriteAt([]byte(recordStr), int64(len(records)-1)*int64(len(recordStr))) // смещение длинна строки на количество строк
+	if err != nil {
+		panic(err)
+	}
 	return nil
-}
-
-func FindLastEntry(chatID int64) {
-
 }

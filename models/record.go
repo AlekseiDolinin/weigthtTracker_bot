@@ -27,6 +27,10 @@ func (r Record) GetStatus() int {
 	return r.deleted
 }
 
+func (r Record) SetStatus(delete int) {
+	r.deleted = delete
+}
+
 // возвращает экземпляр записи
 func NewRecord(id int, weight float64, t time.Time, deleted int) Record {
 	return Record{id: id, weight: weight, t: t, deleted: deleted}

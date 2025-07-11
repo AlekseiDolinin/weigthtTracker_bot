@@ -60,6 +60,14 @@ func main() {
 			preMsg, _ := storage.ShowPreviousEntry(chatID)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+		case strings.EqualFold(text, "/delete"):
+			err := storage.DeletePreviousEntry(chatID)
+			if err != nil {
+				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка удаления %v", err))
+				bot.Send(msg)
+			}
+			msg := tgbotapi.NewMessage(chatID, "Предыдущая запись удалена")
+			bot.Send(msg)
 		case strings.EqualFold(text, "/help"):
 			msg := tgbotapi.NewMessage(chatID, messages.Help)
 			bot.Send(msg)
