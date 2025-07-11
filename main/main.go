@@ -66,7 +66,7 @@ func main() {
 				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка удаления: %v", err))
 				bot.Send(msg)
 			} else {
-				msg := tgbotapi.NewMessage(chatID, "Предыдущая запись удалена")
+				msg := tgbotapi.NewMessage(chatID, "Последняя введенная запись удалена")
 				bot.Send(msg)
 			}
 		case strings.EqualFold(text, "/restore"):
@@ -75,7 +75,7 @@ func main() {
 				msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка восстановления: %v", err))
 				bot.Send(msg)
 			} else {
-				msg := tgbotapi.NewMessage(chatID, "Предыдущая запись восстановлена")
+				msg := tgbotapi.NewMessage(chatID, "Последняя удаленная запись восстановлена")
 				bot.Send(msg)
 			}
 		case strings.EqualFold(text, "/help"):
@@ -85,8 +85,23 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.ErrCommand)
 			bot.Send(msg)
 		case weightInput > 0:
+			storedWeight, _ := storage.DiffWeight(chatID)
 			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now(), 0))
-			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("Ваш вес %.2f кг записан", weightInput))
+
+			diffWeight := weightInput - storedWeight
+			var preMsg string
+			if diffWeight > 0 {
+				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: +%.2f кг",
+					weightInput,
+					diffWeight,
+				)
+			} else {
+				preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %.2f кг",
+					weightInput,
+					diffWeight,
+				)
+			}
+			msg := tgbotapi.NewMessage(chatID, preMsg)
 			weightInput = 0
 			bot.Send(msg)
 		default:

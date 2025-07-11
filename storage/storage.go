@@ -36,7 +36,7 @@ func AddRecordToDB(r models.Record) (err error) {
 	defer file.Close()
 	//преобразует запись в строку
 	//record := string(rune(r.getId())) + ", " /*+ r.getNickname()*/ + string(rune(r.getWeight())) + ", " + r.getTime().String()
-	record := fmt.Sprintf("%d %.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
+	record := fmt.Sprintf("%d %05.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -84,13 +84,13 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 	record, position := FindLastEntry(records, 0)
 
 	if position != -1 {
-		result := fmt.Sprintf("Предыдущая запись создана %d %s %d в %02d:%02d \nВаш вес: %.2f кг",
+		result := fmt.Sprintf("Ваш вес: %.2f кг\nЗапись создана %d %s %d в %02d:%02d ",
+			record.GetWeight(),
 			record.GetTime().Day(),
-			record.GetTime().Month(),
+			parse.ParseMonth(record.GetTime().Month()),
 			record.GetTime().Year(),
 			record.GetTime().Hour(),
 			record.GetTime().Minute(),
-			record.GetWeight(),
 		)
 		return result, nil
 
@@ -126,7 +126,7 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		record.SetStatus(0)
 	}
 
-	recordStr := fmt.Sprintf("%d %.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
+	recordStr := fmt.Sprintf("%d %05.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
 
 	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение длинна строки на количество строк
 	if err != nil {
@@ -147,4 +147,24 @@ func FindLastEntry(records []models.Record, deleted int) (record models.Record, 
 		}
 	}
 	return record, -1 //если не найдено
+}
+
+func DiffWeight(chatID int64) (weight float64, err error) {
+	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	records, err := ReadRecords(int(chatID))
+	if err != nil {
+		return 0.0, err
+	}
+
+	//поиск последней неудаленной записи
+	record, position := FindLastEntry(records, 0)
+	if position == -1 {
+		return 0.0, fmt.Errorf("отсутствуют записи")
+	}
+	return record.GetWeight(), nil
 }
