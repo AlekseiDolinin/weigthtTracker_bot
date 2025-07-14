@@ -12,6 +12,7 @@ import (
 	"weightTrack_bot/messages"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
+	"weightTrack_bot/plots"
 	"weightTrack_bot/storage"
 )
 
@@ -56,17 +57,35 @@ func main() {
 		case strings.EqualFold(text, "/start"):
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
-		case strings.EqualFold(text, "/showWeek"):
+		case strings.EqualFold(text, "/show_week"):
 			period, _ := storage.FindPeriod(chatID, 7)
 			preMsg := storage.ShowPeriod(period, 7)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
-		case strings.EqualFold(text, "/showMonth"):
+		case strings.EqualFold(text, "/show_month"):
 			period, _ := storage.FindPeriod(chatID, 31)
 			preMsg := storage.ShowPeriod(period, 31)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
-		case strings.EqualFold(text, "/weight"):
+		case strings.EqualFold(text, "/show_progress"):
+			period, _ := storage.FindPeriod(chatID, 31)
+			// Создаем график в памяти
+			imgBytes, err := plots.MakePlot(period)
+			if err != nil {
+				log.Panic(err)
+			}
+			// Создаем файл для отправки в Telegram
+			file := tgbotapi.FileBytes{
+				Name:  "plot.png",
+				Bytes: imgBytes,
+			}
+			// Отправляем фото
+			msg := tgbotapi.NewPhoto(chatID, file)
+			msg.Caption = "График изменения веса"
+			if _, err := bot.Send(msg); err != nil {
+				log.Panic(err)
+			}
+		case strings.EqualFold(text, "/show_weight"):
 			preMsg, _ := storage.ShowPreviousEntry(chatID)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
