@@ -9,7 +9,7 @@ import (
 	"weightTrack_bot/parse"
 )
 
-const FileName = "dataBase.txt"
+const fileName = "data/dataBase.txt"
 
 // проверка существования файла
 func fileExists(filename string) bool {
@@ -22,20 +22,20 @@ func AddRecordToDB(r models.Record) (err error) {
 	var file *os.File
 
 	//проверяем существует ли файл
-	if fileExists(FileName) { //если существует - открываем
-		file, err = os.OpenFile(FileName, os.O_APPEND|os.O_WRONLY, 0644)
+	if fileExists(fileName) { //если существует - открываем
+		file, err = os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("ошибка открытия файла: %v", err)
 		}
 	} else { //если не существует - создаем
-		file, err = os.Create(FileName)
+		file, err = os.Create(fileName)
 		if err != nil {
 			return fmt.Errorf("ошибка создания файла: %v", err)
 		}
 	}
 	defer file.Close()
 	//преобразует запись в строку
-	record := fmt.Sprintf("%d %05.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
+	record := fmt.Sprintf("%d %06.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -49,11 +49,11 @@ func AddRecordToDB(r models.Record) (err error) {
 func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	// Проверяем существует ли файл
-	if !fileExists(FileName) {
-		return nil, fmt.Errorf("файл не существует: %s", FileName)
+	if !fileExists(fileName) {
+		return nil, fmt.Errorf("файл не существует: %s", fileName)
 	}
 
-	file, err := os.Open(FileName)
+	file, err := os.Open(fileName)
 	if err != nil {
 		return records, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
@@ -106,7 +106,7 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		return err
 	}
 
-	file, err := os.OpenFile(FileName, os.O_RDWR, 0644)
+	file, err := os.OpenFile(fileName, os.O_RDWR, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +125,7 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		record.SetStatus(0)
 	}
 
-	recordStr := fmt.Sprintf("%d %05.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
+	recordStr := fmt.Sprintf("%d %06.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
 
 	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil {
@@ -209,7 +209,7 @@ func ShowPeriod(result []models.AvgRecordsPeriod, period int) (s string) {
 			diff = rec.GetWeight() - result[i+1].GetWeight()
 		}
 
-		s += fmt.Sprintf("%02d. Вес: %05.2f | %+06.2f | %02d %s %d г.\n",
+		s += fmt.Sprintf("%02d. Вес: %06.2f | %+06.2f | %02d %s %d г.\n",
 			i+1,
 			rec.GetWeight(),
 			diff,

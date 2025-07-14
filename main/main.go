@@ -16,7 +16,9 @@ import (
 	"weightTrack_bot/storage"
 )
 
-//const fileName = "dataBase.txt"
+var isAgeInput bool
+var isHeightInput bool
+var isWeightInput bool
 
 func main() {
 
@@ -33,8 +35,10 @@ func main() {
 	//получаем канал обновлений
 	updates := bot.GetUpdatesChan(u)
 
-	//заглушка сохранения веса
-	var weightInput float64 //заменить на сохранение в базе данных
+	//временное хранение ввода
+	var weightInput float64 //вес
+	var heightInput float64 //рост
+	var ageInput int64      //возраст
 
 	//олучаем сообщения из канала updates в бесконечном цикле
 	for update := range updates {
@@ -47,13 +51,70 @@ func main() {
 		chatID := update.Message.Chat.ID
 
 		//парсим сообщение пользователя на наличие числа для записи веса
-		if _, err := parse.ParseFloat(update.Message.Text); err == nil {
+		if _, err := parse.ParseFloat(update.Message.Text); err == nil && isWeightInput {
 			weightInput, _ = parse.ParseFloat(update.Message.Text)
+		}
+		//парсим рост пользователя
+		if isHeightInput {
+			heightInput, _ = parse.ParseFloat(update.Message.Text)
+		}
+		//парсим возраст пользователя
+		if isAgeInput {
+			ageInput, _ = parse.ParseInt(update.Message.Text)
 		}
 
 		//выбираем ответ по запросу
-		//вынести логику в отдельную функцию
 		switch {
+		case isHeightInput && heightInput > 0:
+			user, position, err := storage.FindUserPosition(chatID)
+			if position != -1 && err == nil {
+				err := storage.UpdateUser(chatID, user, user.GetAge(), heightInput)
+				if err != nil {
+					fmt.Printf("ошибка %v\n", err)
+				} else {
+					preMsg := fmt.Sprintf("Ваш рост %.2f см записан\n", heightInput)
+					msg := tgbotapi.NewMessage(chatID, preMsg)
+					bot.Send(msg)
+				}
+			} else {
+				err := storage.AddUserToDB(models.NewUser(chatID, int(ageInput), heightInput))
+				if err != nil {
+					fmt.Println("ошибка добавления роста пользователя")
+				} else {
+					preMsg := fmt.Sprintf("Ваш рост %.2f см записан\n", heightInput)
+					msg := tgbotapi.NewMessage(chatID, preMsg)
+					bot.Send(msg)
+				}
+			}
+			isHeightInput = false
+			heightInput = 0
+		case strings.EqualFold(text, "/edit_height"):
+			isHeightInput = true
+		case isAgeInput && ageInput > 0:
+			user, position, err := storage.FindUserPosition(chatID)
+			if position != -1 && err == nil {
+				err := storage.UpdateUser(chatID, user, int(ageInput), user.GetHeight())
+				if err != nil {
+					fmt.Printf("ошибка %v\n", err)
+				} else {
+					preMsg := fmt.Sprintf("Ваш возраст %2d лет(года) записан\n", ageInput)
+					msg := tgbotapi.NewMessage(chatID, preMsg)
+					bot.Send(msg)
+				}
+			} else {
+				err := storage.AddUserToDB(models.NewUser(chatID, int(ageInput), heightInput))
+				if err != nil {
+					fmt.Println("ошибка добавления возраста пользователя")
+				} else {
+					preMsg := fmt.Sprintf("Ваш возраст %2d лет(года) записан\n", ageInput)
+					msg := tgbotapi.NewMessage(chatID, preMsg)
+					bot.Send(msg)
+				}
+			}
+			isAgeInput = false
+			ageInput = 0
+		case strings.EqualFold(text, "/edit_age"):
+			isAgeInput = true
 		case strings.EqualFold(text, "/start"):
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
@@ -113,7 +174,7 @@ func main() {
 		case err != nil:
 			msg := tgbotapi.NewMessage(chatID, messages.ErrCommand)
 			bot.Send(msg)
-		case weightInput > 0:
+		case isWeightInput && weightInput > 0 && (!isAgeInput || !isHeightInput):
 			storedWeight, _ := storage.DiffWeight(chatID)
 			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now(), 0))
 
@@ -133,6 +194,9 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			weightInput = 0
 			bot.Send(msg)
+			isWeightInput = false
+		case strings.EqualFold(text, "/weight"):
+			isWeightInput = true
 		default:
 			msg := tgbotapi.NewMessage(chatID, "Неизвестная команда")
 			bot.Send(msg)
