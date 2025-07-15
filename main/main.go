@@ -8,7 +8,9 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/joho/godotenv"
 
+	"weightTrack_bot/donate"
 	"weightTrack_bot/messages"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
@@ -21,6 +23,12 @@ var isHeightInput bool
 var isWeightInput bool
 
 func main() {
+
+	// Загружаем переменные из .env файла
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	//получаем из переменной окружения токен для подключения к телеграм-боту
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
@@ -65,6 +73,19 @@ func main() {
 
 		//выбираем ответ по запросу
 		switch {
+		case strings.HasPrefix(update.Message.Text, "/donate"):
+			amount, err := parse.ParseFloat(update.Message.Text)
+			if err != nil {
+				photo := donate.DoDonate(100.00, chatID)
+				if _, err := bot.Send(photo); err != nil {
+					log.Println("Ошибка отправки QR:", err)
+				}
+			} else {
+				photo := donate.DoDonate(amount, chatID)
+				if _, err := bot.Send(photo); err != nil {
+					log.Println("Ошибка отправки QR:", err)
+				}
+			}
 		case strings.EqualFold(text, "/show_bmi"):
 			user, position, err := storage.FindUserPosition(chatID)
 			records, _ := storage.ReadRecords(int(chatID))
