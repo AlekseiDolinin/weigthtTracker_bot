@@ -131,10 +131,12 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 
 // удаляет(deleted = 0)/восстанавливает(deleted = 1) последнюю запись
 func DeleteRestorePreviousEntry(chatID int64, delete int) error {
-	records, err := ReadRecords(int(chatID))
-	if err != nil {
-		return err
-	}
+	/*
+		records, err := ReadRecords(int(chatID))
+		if err != nil {
+			return err
+		}
+	*/
 
 	allRecords, err := ReadAllRecords()
 	if err != nil {
@@ -148,12 +150,12 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 	defer file.Close()
 
 	//поиск последней удаленной/неудаленной записи
-	record, position := FindLastEntry(records, delete)
+	/*record, position := FindLastEntry(records, delete)
 	if position == -1 {
 		return fmt.Errorf("отсутствуют записи")
-	}
+	}*/
 
-	_, positionOfAll := FindLastEntry(allRecords, delete)
+	record, positionOfAll := FindLastPosition(chatID, allRecords, delete)
 	if positionOfAll == -1 {
 		return fmt.Errorf("отсутствуют записи")
 	}
@@ -179,6 +181,21 @@ func FindLastEntry(records []models.Record, deleted int) (record models.Record, 
 
 	for i := len(records) - 1; i >= 0; i-- {
 		if records[i].GetStatus() != deleted {
+			continue
+		} else {
+			record = records[i]
+			position = i
+			return record, position
+		}
+	}
+	return record, -1 //если не найдено
+}
+
+// ищет позицию последней записи: deleted = 1 ищет последнюю удаленную, deleted = 0 - последнюю не удаленную
+func FindLastPosition(chatID int64, records []models.Record, deleted int) (record models.Record, position int) {
+
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].GetStatus() != deleted || records[i].GetId() != int(chatID) {
 			continue
 		} else {
 			record = records[i]

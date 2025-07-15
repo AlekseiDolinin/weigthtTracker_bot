@@ -12,7 +12,7 @@ import (
 func ParseRecord(record string) (models.Record, error) {
 
 	recordSplit := strings.Split(record, " ")
-	if len(recordSplit) < 3 {
+	if len(recordSplit) < 4 {
 		return models.NewRecord(0, 0, time.Now(), 0), fmt.Errorf("ошибка чтения записи: отсутствуют необходимые данные")
 	}
 	id, _ := strconv.Atoi(recordSplit[0])
@@ -26,9 +26,13 @@ func ParseRecord(record string) (models.Record, error) {
 	}
 	result := models.NewRecord(id, weight, date, deleted)
 
-	if deleted == 0 {
-		return result, nil
-	} else {
-		return result, fmt.Errorf("запись удалена")
-	}
+	//зачем?
+	/*
+		if deleted == 0 {
+			return result, nil
+		} else {
+			return result, fmt.Errorf("запись удалена")
+		}*/
+	return result, nil
+
 }

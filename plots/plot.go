@@ -45,7 +45,7 @@ func FromARPtoDP(result []models.AvgRecordsPeriod) []DataPoint {
 func MakePlot(result []models.AvgRecordsPeriod) ([]byte, error) {
 	// Создаем новый график
 	p := plot.New()
-	p.Title.Text = "График иизмерения веса по дням"
+	p.Title.Text = "График динамики веса по дням"
 	p.X.Label.Text = "Дни"
 	p.Y.Label.Text = "Вес в килограммах"
 
