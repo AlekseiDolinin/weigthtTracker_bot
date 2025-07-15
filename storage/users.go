@@ -113,3 +113,54 @@ func FindUserPosition(chatID int64) (user models.User, position int, err error) 
 	}
 	return user, -1, err //если не найдено
 }
+
+// Рассчитывает индекс массы тела и дает оценку индекса массы тела в зависимсти от возраста
+func FindBMI(u models.User, r models.Record) (bmi float64, assessment string) {
+	bmi = r.GetWeight() / (u.GetHeight() / 100.0 * u.GetHeight() / 100.0)
+	age := u.GetAge()
+	switch {
+	case age > 0 && age < 18:
+		assessment = "Оценка ИМТ для лиц младше 18 лет отсутствует"
+	case age >= 18 && age < 26:
+		switch {
+		case bmi < 18.5:
+			assessment = "Недостаточность питания"
+		case bmi >= 18.5 && bmi <= 19.4:
+			assessment = "Пониженное питание"
+		case bmi >= 19.5 && bmi <= 22.9:
+			assessment = "Нормальное соотношение роста и массы тела"
+		case bmi >= 23 && bmi <= 27.4:
+			assessment = "Повышенное питание"
+		case bmi >= 27.5 && bmi <= 29.9:
+			assessment = "Ожирение I степени"
+		case bmi >= 30 && bmi <= 34.9:
+			assessment = "Ожирение II степени"
+		case bmi >= 35 && bmi <= 39.9:
+			assessment = "Ожирение III степени"
+		case bmi >= 40:
+			assessment = "Ожирение IV степени"
+		}
+	case age >= 26:
+		switch {
+		case bmi < 19:
+			assessment = "Недостаточность питания"
+		case bmi >= 19 && bmi <= 19.9:
+			assessment = "Пониженное питание"
+		case bmi >= 20 && bmi <= 25.9:
+			assessment = "Нормальное соотношение роста и массы тела"
+		case bmi >= 26 && bmi <= 27.9:
+			assessment = "Повышенное питание"
+		case bmi >= 28 && bmi <= 30.9:
+			assessment = "Ожирение I степени"
+		case bmi >= 31 && bmi <= 35.9:
+			assessment = "Ожирение II степени"
+		case bmi >= 36 && bmi <= 40.9:
+			assessment = "Ожирение III степени"
+		case bmi >= 41:
+			assessment = "Ожирение IV степени"
+		}
+	default:
+		assessment = "Возможно, вы неверно указали свой возраст"
+	}
+	return
+}

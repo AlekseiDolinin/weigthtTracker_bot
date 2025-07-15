@@ -65,6 +65,19 @@ func main() {
 
 		//выбираем ответ по запросу
 		switch {
+		case strings.EqualFold(text, "/show_bmi"):
+			user, position, err := storage.FindUserPosition(chatID)
+			records, _ := storage.ReadRecords(int(chatID))
+			record, _ := storage.FindLastEntry(records, 0)
+			if position != -1 && err == nil && user.GetHeight() != 0 {
+				bmi, assessment := storage.FindBMI(user, record)
+				preMsg := fmt.Sprintf("Ваш ИМТ равен: %.2f\n%s", bmi, assessment)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+			} else {
+				msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
+				bot.Send(msg)
+			}
 		case isHeightInput && heightInput > 0:
 			user, position, err := storage.FindUserPosition(chatID)
 			if position != -1 && err == nil {
