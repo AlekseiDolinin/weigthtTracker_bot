@@ -11,6 +11,10 @@ import (
 func ParseUser(record string) (result models.User, err error) {
 
 	recordSplit := strings.Split(record, " ")
+	if len(recordSplit) < 3 {
+		return models.NewUser(0, 0, 0.0), fmt.Errorf("ошибка чтения пользователя: отсутствуют необходимые данные")
+	}
+	//recordSplit := strings.Split(record, " ")
 	id, err1 := strconv.ParseInt(recordSplit[0], 10, 64)
 	age, err2 := strconv.ParseInt(recordSplit[1], 10, 64)
 	height, err3 := strconv.ParseFloat(recordSplit[2], 64)

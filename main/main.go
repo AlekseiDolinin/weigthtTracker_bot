@@ -88,7 +88,17 @@ func main() {
 			}
 		case strings.EqualFold(text, "/show_bmi"):
 			user, position, err := storage.FindUserPosition(chatID)
-			records, _ := storage.ReadRecords(int(chatID))
+			if err != nil {
+				msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
+				bot.Send(msg)
+			}
+
+			records, err := storage.ReadRecords(int(chatID))
+			if err != nil {
+				msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
+				bot.Send(msg)
+			}
+
 			record, _ := storage.FindLastEntry(records, 0)
 			if position != -1 && err == nil && user.GetHeight() != 0 {
 				bmi, assessment := storage.FindBMI(user, record)
@@ -100,6 +110,12 @@ func main() {
 				bot.Send(msg)
 			}
 		case isHeightInput && heightInput > 0:
+			if heightInput > 999.0 {
+				preMsg := fmt.Sprintf("Вы ввели %.2f\nРост не может быть больше 999 см", heightInput)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
 			user, position, err := storage.FindUserPosition(chatID)
 			if position != -1 && err == nil {
 				err := storage.UpdateUser(chatID, user, user.GetAge(), heightInput)
@@ -125,6 +141,12 @@ func main() {
 		case strings.EqualFold(text, "/edit_height"):
 			isHeightInput = true
 		case isAgeInput && ageInput > 0:
+			if ageInput > 999 {
+				preMsg := fmt.Sprintf("Вы ввели %d\nВозраст не может быть больше 999 лет", ageInput)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
 			user, position, err := storage.FindUserPosition(chatID)
 			if position != -1 && err == nil {
 				err := storage.UpdateUser(chatID, user, int(ageInput), user.GetHeight())
@@ -209,7 +231,19 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.ErrCommand)
 			bot.Send(msg)
 		case isWeightInput && weightInput > 0 && (!isAgeInput || !isHeightInput):
-			storedWeight, _ := storage.DiffWeight(chatID)
+			if weightInput > 999.00 {
+				preMsg := fmt.Sprintf("Вы ввели %.2f\nВес не может быть больше 999 кг", weightInput)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
+			storedWeight, err := storage.DiffWeight(chatID)
+			//fmt.Println("err = ", err)
+			if err != nil {
+				storedWeight = weightInput
+				//fmt.Println("err = ", err)
+			}
+
 			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now(), 0))
 
 			diffWeight := weightInput - storedWeight

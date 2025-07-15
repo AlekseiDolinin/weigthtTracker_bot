@@ -28,7 +28,7 @@ func AddUserToDB(r models.User) (err error) {
 	}
 	defer file.Close()
 	//преобразует запись в строку
-	record := fmt.Sprintf("%d %03d %06.2f\n", r.GetId(), r.GetAge(), r.GetHeight())
+	record := fmt.Sprintf("%014d %03d %06.2f\n", r.GetId(), r.GetAge(), r.GetHeight())
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -82,7 +82,7 @@ func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 		return fmt.Errorf("отсутствуют записи: %v", err)
 	}
 
-	userStr := fmt.Sprintf("%d %03d %06.2f\n", user.GetId(), age, height)
+	userStr := fmt.Sprintf("%014d %03d %06.2f\n", user.GetId(), age, height)
 
 	_, err = file.WriteAt([]byte(userStr), int64(position)*int64(len(userStr))-int64(len(userStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil {

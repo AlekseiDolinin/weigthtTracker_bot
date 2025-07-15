@@ -35,7 +35,7 @@ func AddRecordToDB(r models.Record) (err error) {
 	}
 	defer file.Close()
 	//преобразует запись в строку
-	record := fmt.Sprintf("%d %06.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
+	record := fmt.Sprintf("%014d %06.2f %s %d\n", r.GetId(), r.GetWeight(), r.GetTime().Format(time.RFC3339), r.GetStatus())
 
 	//записывает строку в файл
 	_, err = file.WriteString(record)
@@ -61,7 +61,37 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if struc, _ := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID {
+		if struc, err := parse.ParseRecord(scanner.Text()); struc.GetId() == chatID {
+			if err != nil {
+				continue
+			}
+			records = append(records, struc)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return records, fmt.Errorf("ошибка чтения файла: %v", err)
+	}
+	return
+}
+
+// возвращает слайс записей из файла f
+func ReadAllRecords() (records []models.Record, err error) {
+
+	// Проверяем существует ли файл
+	if !fileExists(fileName) {
+		return nil, fmt.Errorf("файл не существует: %s", fileName)
+	}
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		return records, fmt.Errorf("ошибка открытия файла: %v", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if struc, err := parse.ParseRecord(scanner.Text()); err == nil {
 			records = append(records, struc)
 		}
 	}
@@ -106,6 +136,11 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		return err
 	}
 
+	allRecords, err := ReadAllRecords()
+	if err != nil {
+		return err
+	}
+
 	file, err := os.OpenFile(fileName, os.O_RDWR, 0644)
 	if err != nil {
 		panic(err)
@@ -118,6 +153,11 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		return fmt.Errorf("отсутствуют записи")
 	}
 
+	_, positionOfAll := FindLastEntry(allRecords, delete)
+	if positionOfAll == -1 {
+		return fmt.Errorf("отсутствуют записи")
+	}
+
 	switch delete {
 	case 0:
 		record.SetStatus(1)
@@ -125,9 +165,9 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		record.SetStatus(0)
 	}
 
-	recordStr := fmt.Sprintf("%d %06.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
+	recordStr := fmt.Sprintf("%014d %06.2f %s %d\n", record.GetId(), record.GetWeight(), record.GetTime().Format(time.RFC3339), record.GetStatus())
 
-	_, err = file.WriteAt([]byte(recordStr), int64(position)*int64(len(recordStr))) // смещение: произведение длинны строки на количество строк
+	_, err = file.WriteAt([]byte(recordStr), int64(positionOfAll)*int64(len(recordStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil {
 		panic(err)
 	}
@@ -136,6 +176,7 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 
 // ищет последнюю запись: deleted = 1 ищет последнюю удаленную, deleted = 0 - последнюю не удаленную
 func FindLastEntry(records []models.Record, deleted int) (record models.Record, position int) {
+
 	for i := len(records) - 1; i >= 0; i-- {
 		if records[i].GetStatus() != deleted {
 			continue

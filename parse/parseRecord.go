@@ -12,6 +12,9 @@ import (
 func ParseRecord(record string) (models.Record, error) {
 
 	recordSplit := strings.Split(record, " ")
+	if len(recordSplit) < 3 {
+		return models.NewRecord(0, 0, time.Now(), 0), fmt.Errorf("ошибка чтения записи: отсутствуют необходимые данные")
+	}
 	id, _ := strconv.Atoi(recordSplit[0])
 	weight, _ := strconv.ParseFloat(recordSplit[1], 64)
 	RFC3339 := "2006-01-02T15:04:05Z07:00"
