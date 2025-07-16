@@ -25,14 +25,5 @@ func ParseRecord(record string) (models.Record, error) {
 		deleted = 1
 	}
 	result := models.NewRecord(id, weight, date, deleted)
-
-	//зачем?
-	/*
-		if deleted == 0 {
-			return result, nil
-		} else {
-			return result, fmt.Errorf("запись удалена")
-		}*/
 	return result, nil
-
 }

@@ -10,6 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 
+	"weightTrack_bot/backup"
 	"weightTrack_bot/donate"
 	"weightTrack_bot/messages"
 	"weightTrack_bot/models"
@@ -30,25 +31,32 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	//получаем из переменной окружения токен для подключения к телеграм-боту
+	// Получаем из переменной окружения токен для подключения к телеграм-боту
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
 		log.Panic(err)
 	}
 
-	//настраиваем получение обновлений, устаналиваем время ожидания новых сообщений
+	// Резервное сохранение данных
+	var path, _ = parse.ParseInt(os.Getenv("TELEGRAM_BOT_PATH"))
+	var filePath1 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE1")
+	var filePath2 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE2")
+	go backup.StartDailyBackup(bot, filePath1, path)
+	go backup.StartDailyBackup(bot, filePath2, path)
+
+	// Настраиваем получение обновлений, устаналиваем время ожидания новых сообщений
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	//получаем канал обновлений
+	// Получаем канал обновлений
 	updates := bot.GetUpdatesChan(u)
 
-	//временное хранение ввода
+	// Временное хранение ввода
 	var weightInput float64 //вес
 	var heightInput float64 //рост
 	var ageInput int64      //возраст
 
-	//олучаем сообщения из канала updates в бесконечном цикле
+	// Получаем сообщения из канала updates в бесконечном цикле
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -238,10 +246,8 @@ func main() {
 				continue
 			}
 			storedWeight, err := storage.DiffWeight(chatID)
-			//fmt.Println("err = ", err)
 			if err != nil {
 				storedWeight = weightInput
-				//fmt.Println("err = ", err)
 			}
 
 			storage.AddRecordToDB(models.NewRecord(int(chatID), weightInput, time.Now(), 0))

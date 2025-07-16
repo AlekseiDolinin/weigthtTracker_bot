@@ -131,12 +131,6 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 
 // удаляет(deleted = 0)/восстанавливает(deleted = 1) последнюю запись
 func DeleteRestorePreviousEntry(chatID int64, delete int) error {
-	/*
-		records, err := ReadRecords(int(chatID))
-		if err != nil {
-			return err
-		}
-	*/
 
 	allRecords, err := ReadAllRecords()
 	if err != nil {
@@ -148,12 +142,6 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		panic(err)
 	}
 	defer file.Close()
-
-	//поиск последней удаленной/неудаленной записи
-	/*record, position := FindLastEntry(records, delete)
-	if position == -1 {
-		return fmt.Errorf("отсутствуют записи")
-	}*/
 
 	record, positionOfAll := FindLastPosition(chatID, allRecords, delete)
 	if positionOfAll == -1 {
