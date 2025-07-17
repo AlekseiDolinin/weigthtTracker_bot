@@ -126,11 +126,11 @@ func FindBMI(u models.User, r models.Record) (bmi float64, assessment string) {
 		case bmi < 18.5:
 			assessment = "Недостаточность питания"
 		case bmi >= 18.5 && bmi <= 19.4:
-			assessment = "Пониженное питание"
+			assessment = "Вес в норме\nПониженное питание"
 		case bmi >= 19.5 && bmi <= 22.9:
-			assessment = "Нормальное соотношение роста и массы тела"
+			assessment = "Вес в норме\nНормальное соотношение роста и массы тела"
 		case bmi >= 23 && bmi <= 27.4:
-			assessment = "Повышенное питание"
+			assessment = "Вес в норме\nПовышенное питание"
 		case bmi >= 27.5 && bmi <= 29.9:
 			assessment = "Ожирение I степени"
 		case bmi >= 30 && bmi <= 34.9:

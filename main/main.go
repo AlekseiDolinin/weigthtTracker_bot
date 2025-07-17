@@ -103,7 +103,7 @@ func main() {
 
 			records, err := storage.ReadRecords(int(chatID))
 			if err != nil {
-				msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
+				msg := tgbotapi.NewMessage(chatID, "Укажите свой вес с помощью команды /weight")
 				bot.Send(msg)
 			}
 
@@ -114,7 +114,8 @@ func main() {
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 			} else {
-				msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
+				preMsg := fmt.Sprintf("Вы не указали свой вес: %v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 			}
 		case isHeightInput && heightInput > 0:
@@ -183,21 +184,42 @@ func main() {
 			msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/show_week"):
-			period, _ := storage.FindPeriod(chatID, 7)
+			period, err := storage.FindPeriod(chatID, 7)
+			if err != nil {
+				preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
 			preMsg := storage.ShowPeriod(period, 7)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/show_month"):
-			period, _ := storage.FindPeriod(chatID, 31)
+			period, err := storage.FindPeriod(chatID, 31)
+			if err != nil {
+				preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
 			preMsg := storage.ShowPeriod(period, 31)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		case strings.EqualFold(text, "/show_progress"):
-			period, _ := storage.FindPeriod(chatID, 31)
+			period, err := storage.FindPeriod(chatID, 31)
+			if err != nil {
+				preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
+			}
 			// Создаем график в памяти
 			imgBytes, err := plots.MakePlot(period)
 			if err != nil {
-				log.Panic(err)
+				preMsg := fmt.Sprintf("Не удалось создать график: %v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
+				continue
 			}
 			// Создаем файл для отправки в Telegram
 			file := tgbotapi.FileBytes{
@@ -208,7 +230,9 @@ func main() {
 			msg := tgbotapi.NewPhoto(chatID, file)
 			msg.Caption = "График изменения веса"
 			if _, err := bot.Send(msg); err != nil {
-				log.Panic(err)
+				preMsg := fmt.Sprintf("Не удалось отправить график: \n%v\n", err)
+				msg := tgbotapi.NewMessage(chatID, preMsg)
+				bot.Send(msg)
 			}
 		case strings.EqualFold(text, "/show_weight"):
 			preMsg, _ := storage.ShowPreviousEntry(chatID)

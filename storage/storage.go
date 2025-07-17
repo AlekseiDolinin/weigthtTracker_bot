@@ -71,6 +71,8 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	if err := scanner.Err(); err != nil {
 		return records, fmt.Errorf("ошибка чтения файла: %v", err)
+	} else if len(records) == 0 {
+		return nil, fmt.Errorf("отсутствуют записи: %v", err)
 	}
 	return
 }
@@ -213,7 +215,10 @@ func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
 		return nil, err
+	} else if len(records) == 0 {
+		return nil, fmt.Errorf("отсутствуют записи")
 	}
+
 	var dayAVG float64
 	var countDays int
 	lastEntry, _ := FindLastEntry(records, 0)
