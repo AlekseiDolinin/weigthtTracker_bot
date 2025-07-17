@@ -180,7 +180,6 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		state.IsHeightInput = true
 		msg := tgbotapi.NewMessage(chatID, "Введите рост в сантиметрах")
 		bot.Send(msg)
-		state.Reset()
 	case state.IsAgeInput && state.AgeInput > 0:
 		if state.AgeInput > 999 {
 			preMsg := fmt.Sprintf("Вы ввели %d\nВозраст не может быть больше 999 лет", state.AgeInput)
@@ -283,7 +282,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 	case strings.EqualFold(text, "/show_weight"):
 		preMsg, err := storage.ShowPreviousEntry(chatID)
 		if err != nil {
-			preMsg = "Ошибка: "
+			preMsg = fmt.Sprintf("Ошибка: %v", err)
 		}
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
@@ -330,12 +329,11 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		diffWeight := state.WeightInput - storedWeight
 		var preMsg string
 		if diffWeight == 0 {
-			preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %.2f кг",
+			preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\n",
 				state.WeightInput,
-				diffWeight,
 			)
 		} else {
-			preMsg = fmt.Sprintf("Ваш вес %.2f кг записан\nРазница с прежним весом: %+.2f кг",
+			preMsg = fmt.Sprintf("Ваш вес %.2f кг записан.\nРазница с прежним весом: %+.2f кг",
 				state.WeightInput,
 				diffWeight,
 			)
@@ -351,7 +349,6 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		state.IsWeightInput = true
 		msg := tgbotapi.NewMessage(chatID, "Введите вес в килограммах")
 		bot.Send(msg)
-		state.Reset()
 	default:
 		msg := tgbotapi.NewMessage(chatID, "Неизвестная команда")
 		bot.Send(msg)

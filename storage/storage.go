@@ -247,6 +247,7 @@ func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err
 
 // формирует форматироваанную строку из слайса средних данных по дням за период []models.AvgRecordsPeriod
 func ShowPeriod(result []models.AvgRecordsPeriod, period int) (s string) {
+	s = "Среднее значение за день: \n"
 	for i, rec := range result {
 		if i >= period {
 			continue
@@ -257,13 +258,17 @@ func ShowPeriod(result []models.AvgRecordsPeriod, period int) (s string) {
 			diff = rec.GetWeight() - result[i+1].GetWeight()
 		}
 
-		s += fmt.Sprintf("%02d. Вес: %06.2f | %+06.2f | %02d %s %d г.\n",
-			i+1,
-			rec.GetWeight(),
-			diff,
+		var diffStr string
+		if diff != 0 {
+			diffStr = fmt.Sprintf("%+06.2f", diff)
+		}
+
+		s += fmt.Sprintf("%02d %s %dг.: %.2fкг. %s \n",
 			rec.GetTime().Day(),
 			parse.ParseMonth(rec.GetTime().Month()),
 			rec.GetTime().Year(),
+			rec.GetWeight(),
+			diffStr,
 		)
 	}
 	return
