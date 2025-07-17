@@ -64,7 +64,6 @@ func main() {
 				&wg,
 				func(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 					engine.Engine(update, bot, wg) // Oсновная логика
-					//wg.Done()                  // Уменьшаем счётчик WaitGroup
 				})
 		}
 		goroutines[chatID].Input <- update

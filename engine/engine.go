@@ -101,26 +101,38 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			}
 		}
 	case strings.EqualFold(text, "/show_bmi"):
-		user, position, err := storage.FindUserPosition(chatID)
-		if err != nil {
-			msg := tgbotapi.NewMessage(chatID, "Укажите свой возраст и рост с помощью команд:\n/edit_height -редактировать рост,\n/edit_age - редактировать возраст")
-			bot.Send(msg)
+		var save_weight string
+		var edit_height string
+		var edit_age string
+
+		user, positionU, errU := storage.FindUserPosition(chatID)
+		records, errR := storage.ReadRecords(int(chatID))
+		record, positionR := storage.FindLastEntry(records, 0)
+
+		if user.GetHeight() == 0 {
+			edit_height = "/edit_height - редактировать рост\n"
+		}
+		if user.GetAge() == 0 {
+			edit_age = "/edit_age - редактировать возраст\n"
+		}
+		if positionR == -1 {
+			save_weight = "/save_weight - записать вес\n"
 		}
 
-		records, err := storage.ReadRecords(int(chatID))
-		if err != nil {
-			msg := tgbotapi.NewMessage(chatID, "Укажите свой вес с помощью команды /weight")
-			bot.Send(msg)
-		}
-
-		record, _ := storage.FindLastEntry(records, 0)
-		if position != -1 && err == nil && user.GetHeight() != 0 {
-			bmi, assessment := storage.FindBMI(user, record)
-			preMsg := fmt.Sprintf("Ваш ИМТ равен: %.2f\n%s", bmi, assessment)
+		if errU != nil || errR != nil || positionU == -1 || positionR == -1 ||
+			user.GetAge() == 0 || user.GetHeight() == 0 {
+			preMsg := fmt.Sprintf("Недостаточно данных:\n%s%s%s",
+				save_weight,
+				edit_height,
+				edit_age,
+			)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
-		} else {
-			preMsg := "Недостаточно данных для расчета ИМТ:\nУбедитесь, что Вы ввели свой вес, рост и возраст"
+		}
+
+		if positionR != -1 && positionU != -1 && user.GetHeight() != 0 && user.GetAge() != 0 {
+			bmi, assessment := storage.FindBMI(user, record)
+			preMsg := fmt.Sprintf("Ваш ИМТ равен: %.2f\n%s", bmi, assessment)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		}
@@ -253,8 +265,11 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			bot.Send(msg)
 		}
 	case strings.EqualFold(text, "/show_weight"):
-		preMsg, _ := storage.ShowPreviousEntry(chatID)
-		msg := tgbotapi.NewMessage(chatID, preMsg)
+		preMsg, err := storage.ShowPreviousEntry(chatID)
+		if err != nil {
+			preMsg = "Ошибка: "
+		}
+		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("%s %v", preMsg, err))
 		bot.Send(msg)
 	case strings.EqualFold(text, "/delete"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 0)
@@ -308,7 +323,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		bot.Send(msg)
 		state.WeightInput = 0
 		state.IsWeightInput = false
-	case strings.EqualFold(text, "/weight"):
+	case strings.EqualFold(text, "/save_weight"):
 		// При множественном вводе команд оставляем только последнюю
 		state.IsAgeInput = false
 		state.IsHeightInput = false

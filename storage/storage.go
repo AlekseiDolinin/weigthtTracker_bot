@@ -73,7 +73,7 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 	if err := scanner.Err(); err != nil {
 		return records, fmt.Errorf("ошибка чтения файла: %v", err)
 	} else if len(records) == 0 {
-		return nil, fmt.Errorf("отсутствуют записи: %v", err)
+		return nil, fmt.Errorf("отсутствуют записи")
 	}
 	return
 }
@@ -109,7 +109,6 @@ func ReadAllRecords() (records []models.Record, err error) {
 func ShowPreviousEntry(chatID int64) (result string, err error) {
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
-		result := "ошибка при чтении данных"
 		return result, err
 	}
 	//поиск последней неудаленной записи
@@ -125,11 +124,8 @@ func ShowPreviousEntry(chatID int64) (result string, err error) {
 			record.GetTime().Minute(),
 		)
 		return result, nil
-
-	} else {
-		result = "Вы еще не записывали свой вес"
-		return result, err
 	}
+	return
 }
 
 // удаляет(deleted = 0)/восстанавливает(deleted = 1) последнюю запись

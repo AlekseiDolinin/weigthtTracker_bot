@@ -31,9 +31,10 @@ func AddUserToDB(r models.User) (err error) {
 	record := fmt.Sprintf("%014d %03d %06.2f\n", r.GetId(), r.GetAge(), r.GetHeight())
 
 	//записывает строку в файл
-	_, err = file.WriteString(record)
-	if err != nil {
-		return fmt.Errorf("ошибка записи в файл: %v", err)
+	i, err := file.WriteString(record)
+
+	if err != nil || i != 26 {
+		return fmt.Errorf("ошибка записи нового пользователя: %v", err)
 	}
 	return nil
 }
@@ -87,9 +88,9 @@ func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 
 	userStr := fmt.Sprintf("%014d %03d %06.2f\n", user.GetId(), age, height)
 
-	_, err = file.WriteAt([]byte(userStr), int64(position)*int64(len(userStr))-int64(len(userStr))) // смещение: произведение длинны строки на количество строк
-	if err != nil {
-		panic(err)
+	i, err := file.WriteAt([]byte(userStr), int64(position)*int64(len(userStr))-int64(len(userStr))) // смещение: произведение длинны строки на количество строк
+	if err != nil || i != 26 {
+		return fmt.Errorf("ошибка обновления записи пользователя: %v", err)
 	}
 	return nil
 }
