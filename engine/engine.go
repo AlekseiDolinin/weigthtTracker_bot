@@ -26,6 +26,11 @@ type UserState struct {
 	AgeInput      int64
 }
 
+// Reset сбрасывает все флаги ввода (IsAgeInput, IsHeightInput, IsWeightInput) в false.
+func (us *UserState) Reset() {
+	*us = UserState{} // сбрасывает все поля в их нулевые значения
+}
+
 // Хранилище состояний пользователей
 var userStates = make(map[int64]*UserState)
 
@@ -100,6 +105,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 				log.Println("Ошибка отправки QR:", err)
 			}
 		}
+		state.Reset()
 	case strings.EqualFold(text, "/show_bmi"):
 		var save_weight string
 		var edit_height string
@@ -136,11 +142,13 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		}
+		state.Reset()
 	case state.IsHeightInput && state.HeightInput > 0:
 		if state.HeightInput > 999.0 {
 			preMsg := fmt.Sprintf("Вы ввели %.2f\nРост не может быть больше 999 см", state.HeightInput)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		user, position, err := storage.FindUserPosition(chatID)
@@ -163,8 +171,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 				bot.Send(msg)
 			}
 		}
-		state.IsHeightInput = false
-		state.HeightInput = 0
+		state.Reset()
 	case strings.EqualFold(text, "/edit_height"):
 		// При множественном вводе команд оставляем только последнюю
 		state.IsAgeInput = false
@@ -173,11 +180,13 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		state.IsHeightInput = true
 		msg := tgbotapi.NewMessage(chatID, "Введите рост в сантиметрах")
 		bot.Send(msg)
+		state.Reset()
 	case state.IsAgeInput && state.AgeInput > 0:
 		if state.AgeInput > 999 {
 			preMsg := fmt.Sprintf("Вы ввели %d\nВозраст не может быть больше 999 лет", state.AgeInput)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		user, position, err := storage.FindUserPosition(chatID)
@@ -200,8 +209,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 				bot.Send(msg)
 			}
 		}
-		state.IsAgeInput = false
-		state.AgeInput = 0
+		state.Reset()
 	case strings.EqualFold(text, "/edit_age"):
 		// При множественном вводе команд оставляем только последнюю
 		state.IsHeightInput = false
@@ -213,34 +221,40 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 	case strings.EqualFold(text, "/start"):
 		msg := tgbotapi.NewMessage(chatID, messages.WelcomeMsg)
 		bot.Send(msg)
+		state.Reset()
 	case strings.EqualFold(text, "/show_week"):
 		period, err := storage.FindPeriod(chatID, 7)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		preMsg := storage.ShowPeriod(period, 7)
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
+		state.Reset()
 	case strings.EqualFold(text, "/show_month"):
 		period, err := storage.FindPeriod(chatID, 31)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		preMsg := storage.ShowPeriod(period, 31)
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
+		state.Reset()
 	case strings.EqualFold(text, "/show_progress"):
 		period, err := storage.FindPeriod(chatID, 31)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		// Создаем график в памяти
@@ -249,6 +263,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			preMsg := fmt.Sprintf("Не удалось создать график: %v\n", err)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		// Создаем файл для отправки в Telegram
@@ -264,13 +279,15 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		}
+		state.Reset()
 	case strings.EqualFold(text, "/show_weight"):
 		preMsg, err := storage.ShowPreviousEntry(chatID)
 		if err != nil {
 			preMsg = "Ошибка: "
 		}
-		msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("%s %v", preMsg, err))
+		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
+		state.Reset()
 	case strings.EqualFold(text, "/delete"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 0)
 		if err != nil {
@@ -280,6 +297,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			msg := tgbotapi.NewMessage(chatID, "Последняя введенная запись удалена")
 			bot.Send(msg)
 		}
+		state.Reset()
 	case strings.EqualFold(text, "/restore"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 1)
 		if err != nil {
@@ -289,14 +307,17 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			msg := tgbotapi.NewMessage(chatID, "Последняя удаленная запись восстановлена")
 			bot.Send(msg)
 		}
+		state.Reset()
 	case strings.EqualFold(text, "/help"):
 		msg := tgbotapi.NewMessage(chatID, messages.Help)
 		bot.Send(msg)
+		state.Reset()
 	case state.IsWeightInput && state.WeightInput > 0 && (!state.IsAgeInput || !state.IsHeightInput):
 		if state.WeightInput > 999.00 {
 			preMsg := fmt.Sprintf("Вы ввели %.2f\nВес не может быть больше 999 кг", state.WeightInput)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
+			state.Reset()
 			return
 		}
 		storedWeight, err := storage.DiffWeight(chatID)
@@ -321,8 +342,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		}
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
-		state.WeightInput = 0
-		state.IsWeightInput = false
+		state.Reset()
 	case strings.EqualFold(text, "/save_weight"):
 		// При множественном вводе команд оставляем только последнюю
 		state.IsAgeInput = false
@@ -331,8 +351,10 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		state.IsWeightInput = true
 		msg := tgbotapi.NewMessage(chatID, "Введите вес в килограммах")
 		bot.Send(msg)
+		state.Reset()
 	default:
 		msg := tgbotapi.NewMessage(chatID, "Неизвестная команда")
 		bot.Send(msg)
+		state.Reset()
 	}
 }
