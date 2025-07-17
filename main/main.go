@@ -37,6 +37,8 @@ func main() {
 		log.Panic(err)
 	}
 
+	log.Println("Bot token:", os.Getenv("TELEGRAM_BOT_TOKEN"))
+
 	// Резервное сохранение данных
 	var path, _ = parse.ParseInt(os.Getenv("TELEGRAM_BOT_PATH"))
 	var filePath1 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE1")
@@ -114,7 +116,7 @@ func main() {
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 			} else {
-				preMsg := fmt.Sprintf("Вы не указали свой вес: %v\n", err)
+				preMsg := "Недостаточно данных для расчета ИМТ:\nУбедитесь, что Вы ввели свой вес, рост и возраст"
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 			}

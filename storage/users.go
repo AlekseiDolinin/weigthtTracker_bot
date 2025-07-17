@@ -78,8 +78,11 @@ func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 
 	//поиск позиции пользователя
 	user, position, err := FindUserPosition(chatID)
+	if err != nil {
+		return err
+	}
 	if position == -1 {
-		return fmt.Errorf("отсутствуют записи: %v", err)
+		return fmt.Errorf("отсутствуют записи")
 	}
 
 	userStr := fmt.Sprintf("%014d %03d %06.2f\n", user.GetId(), age, height)
