@@ -18,11 +18,11 @@ func StartDailyBackup(bot *tgbotapi.BotAPI, filePath string, chatID int64) {
 		)
 		timeUntilMidnight := nextMidnight.Sub(now)
 
-		log.Printf("Следующая отправка файла в: %v", nextMidnight)
+		//log.Printf("Следующая отправка файла в: %v", nextMidnight)
 		time.Sleep(timeUntilMidnight)
 
 		if err := sendFile(bot, filePath, chatID); err != nil {
-			log.Println("Ошибка отправки файла:", err)
+			//log.Println("Ошибка отправки файла:", err)
 			time.Sleep(10 * time.Minute)
 		} else {
 			time.Sleep(10 * time.Minute)
