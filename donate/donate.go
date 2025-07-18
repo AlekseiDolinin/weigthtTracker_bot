@@ -2,8 +2,8 @@ package donate
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"weightTrack_bot/backup"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/skip2/go-qrcode"
@@ -13,6 +13,8 @@ import (
 func generateQRCode(content string) ([]byte, error) {
 	qr, err := qrcode.Encode(content, qrcode.Medium, 256)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка генерации QR-кода %v", err)
+		backup.WriteLog(msg)
 		return nil, err
 	}
 	return qr, nil
@@ -25,7 +27,8 @@ func DoDonate(sum float64, chatID int64) tgbotapi.PhotoConfig {
 	// Создаем QR-код
 	qrCode, err := generateQRCode(donateLink)
 	if err != nil {
-		log.Println("Ошибка генерации QR:", err)
+		msg := fmt.Sprintf("Ошибка генерации QR-кода %v", err)
+		backup.WriteLog(msg)
 	}
 
 	// Отправляем QR-код в чат

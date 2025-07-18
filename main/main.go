@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"sync"
@@ -17,24 +17,33 @@ import (
 
 func main() {
 
+	backup.WriteLog("Приложение запущено")
+	defer backup.WriteLog("Приложение остановлено")
+
 	// Загружаем переменные из .env файла
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		msg := fmt.Sprintf("Ошибка загрузки файла .env:  %v", err)
+		backup.WriteLog(msg)
 	}
 
 	// Получаем из переменной окружения токен для подключения к телеграм-боту
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
-		log.Panic(err)
+		msg := fmt.Sprintf("Ошибка получения токена:  %v", err)
+		backup.WriteLog(msg)
 	}
 
 	// Резервное сохранение данных
 	var path, _ = parse.ParseInt(os.Getenv("TELEGRAM_BOT_PATH"))
 	var filePath1 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE1")
 	var filePath2 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE2")
+	var filePath3 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE3")
+	var filePath4 = os.Getenv("TELEGRAM_BOT_BACKUP_FILE4")
 	go backup.StartDailyBackup(bot, filePath1, path)
 	go backup.StartDailyBackup(bot, filePath2, path)
+	go backup.StartDailyBackup(bot, filePath3, path)
+	go backup.StartDailyBackup(bot, filePath4, path)
 
 	// Настраиваем получение обновлений, устаналиваем время ожидания новых сообщений
 	u := tgbotapi.NewUpdate(0)

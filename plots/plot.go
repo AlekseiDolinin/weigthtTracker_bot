@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"strconv"
 	"time"
+	"weightTrack_bot/backup"
 	"weightTrack_bot/models"
 
 	"gonum.org/v1/plot"
@@ -142,6 +143,8 @@ func MakePlot(result []models.AvgRecordsPeriod) ([]byte, error) {
 				Labels: []string{data[i-1].Label},
 			})
 			if err != nil {
+				msg := fmt.Sprintf("Ошибка добавления подписей к точкам графика %v", err)
+				backup.WriteLog(msg)
 				return nil, err
 			}
 			p.Add(label)
@@ -162,7 +165,9 @@ func MakePlot(result []models.AvgRecordsPeriod) ([]byte, error) {
 	pngWriter := vgimg.PngCanvas{Canvas: c}
 
 	// Записываем PNG в буфер
-	if _, err := pngWriter.WriteTo(&buf); err != nil {
+	if i, err := pngWriter.WriteTo(&buf); err != nil {
+		msg := fmt.Sprintf("Ошибка записи PNG размером %d в буфер %v", i, err)
+		backup.WriteLog(msg)
 		return nil, err
 	}
 

@@ -2,10 +2,10 @@ package engine
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
+	"weightTrack_bot/backup"
 	"weightTrack_bot/donate"
 	"weightTrack_bot/messages"
 	"weightTrack_bot/models"
@@ -117,6 +117,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		storedWeight, err := storage.DiffWeight(chatID)
 		if err != nil {
 			storedWeight = state.WeightInput
+			msg := fmt.Sprintf("Ошибка storage.DiffWeight %v", err)
+			backup.WriteLog(msg)
 		}
 
 		storage.AddRecordToDB(models.NewRecord(int(chatID), state.WeightInput, time.Now(), 0))
@@ -140,6 +142,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		preMsg, err := storage.ShowPreviousEntry(chatID)
 		if err != nil {
 			preMsg = fmt.Sprintf("Ошибка: %v", err)
+			backup.WriteLog(preMsg)
 		}
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
@@ -148,6 +151,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		user, position, err := storage.FindUserPosition(chatID)
 		if err != nil {
 			msg := tgbotapi.NewMessage(chatID, "Ошибка чтения данных")
+			backup.WriteLog(fmt.Sprintf("Ошибка чтения данных: %v", err))
 			bot.Send(msg)
 			state.Reset()
 			return
@@ -205,6 +209,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 				edit_height,
 				edit_age,
 			)
+			msgLog := fmt.Sprintf("Ошибки: %v, %v", errU, errR)
+			backup.WriteLog(msgLog)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		}
@@ -221,6 +227,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 			state.Reset()
@@ -230,6 +237,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		imgBytes, err := plots.MakePlot(period)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось создать график: %v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 			state.Reset()
@@ -245,6 +253,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		msg.Caption = "График изменения веса"
 		if _, err := bot.Send(msg); err != nil {
 			preMsg := fmt.Sprintf("Не удалось отправить график: \n%v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 		}
@@ -253,6 +262,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		period, err := storage.FindPeriod(chatID, 7)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 			state.Reset()
@@ -266,6 +276,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		period, err := storage.FindPeriod(chatID, 31)
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 			state.Reset()
@@ -296,7 +307,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		if position != -1 && err == nil {
 			err := storage.UpdateUser(chatID, user, user.GetAge(), state.HeightInput)
 			if err != nil {
-				fmt.Printf("ошибка %v\n", err)
+				msgLog := fmt.Sprintf("Ошибка обновления данных пользователя: %v", err)
+				backup.WriteLog(msgLog)
 			} else {
 				preMsg := fmt.Sprintf("Ваш рост %.2f см записан\n", state.HeightInput)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
@@ -305,7 +317,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		} else {
 			err := storage.AddUserToDB(models.NewUser(chatID, int(state.AgeInput), state.HeightInput))
 			if err != nil {
-				fmt.Println("ошибка добавления роста пользователя")
+				msgLog := fmt.Sprintf("Ошибка добавления роста пользователя: %v", err)
+				backup.WriteLog(msgLog)
 			} else {
 				preMsg := fmt.Sprintf("Ваш рост %.2f см записан\n", state.HeightInput)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
@@ -333,6 +346,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		user, position, err := storage.FindUserPosition(chatID)
 		if err != nil {
 			preMsg := fmt.Sprintf("Ошибка %v\n", err)
+			backup.WriteLog(preMsg)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
 			bot.Send(msg)
 			state.Reset()
@@ -343,6 +357,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			err := storage.UpdateUser(chatID, user, int(state.AgeInput), user.GetHeight())
 			if err != nil {
 				preMsg := fmt.Sprintf("Ошибка %v\n", err)
+				backup.WriteLog(preMsg)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 				state.Reset()
@@ -352,6 +367,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			err := storage.AddUserToDB(models.NewUser(chatID, int(state.AgeInput), state.HeightInput))
 			if err != nil {
 				preMsg := fmt.Sprintf("Ошибка %v\n", err)
+				backup.WriteLog(preMsg)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
 				state.Reset()
@@ -365,6 +381,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 	case strings.EqualFold(text, "/delete"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 0)
 		if err != nil {
+			msgLog := fmt.Sprintf("Ошибка удаления: %v", err)
+			backup.WriteLog(msgLog)
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка удаления: %v", err))
 			bot.Send(msg)
 		} else {
@@ -375,6 +393,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 	case strings.EqualFold(text, "/restore"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 1)
 		if err != nil {
+			msgLog := fmt.Sprintf("Ошибка восстановления: %v", err)
+			backup.WriteLog(msgLog)
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("ошибка восстановления: %v", err))
 			bot.Send(msg)
 		} else {
@@ -391,12 +411,14 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		if err != nil {
 			photo := donate.DoDonate(100.00, chatID)
 			if _, err := bot.Send(photo); err != nil {
-				log.Println("Ошибка отправки QR:", err)
+				msgLog := fmt.Sprintf("Ошибка отправки QR: %v", err)
+				backup.WriteLog(msgLog)
 			}
 		} else {
 			photo := donate.DoDonate(amount, chatID)
 			if _, err := bot.Send(photo); err != nil {
-				log.Println("Ошибка отправки QR:", err)
+				msgLog := fmt.Sprintf("Ошибка отправки QR: %v", err)
+				backup.WriteLog(msgLog)
 			}
 		}
 		state.Reset()
@@ -416,6 +438,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			preMsg := "Ошибка: "
 			msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("%s %s", preMsg, err))
 			bot.Send(msg)
+			msgLog := fmt.Sprintf("Ошибка %s", err)
+			backup.WriteLog(msgLog)
 		} else {
 			msg := tgbotapi.NewMessage(chatID, "Отзыв отправлен")
 			bot.Send(msg)

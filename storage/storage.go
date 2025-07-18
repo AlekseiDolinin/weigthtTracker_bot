@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"weightTrack_bot/backup"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
 )
@@ -15,6 +16,10 @@ const fileName = "data/dataBase.txt"
 // проверка существования файла
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
+	if err != nil {
+		msg := fmt.Sprintf("Файл %s не существует: %v", filename, err)
+		backup.WriteLog(msg)
+	}
 	return !os.IsNotExist(err)
 }
 
@@ -26,11 +31,15 @@ func AddRecordToDB(r models.Record) (err error) {
 	if fileExists(fileName) { //если существует - открываем
 		file, err = os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
+			msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+			backup.WriteLog(msg)
 			return fmt.Errorf("ошибка открытия файла: %v", err)
 		}
 	} else { //если не существует - создаем
 		file, err = os.Create(fileName)
 		if err != nil {
+			msg := fmt.Sprintf("Ошибка создания файла: %v", err)
+			backup.WriteLog(msg)
 			return fmt.Errorf("ошибка создания файла: %v", err)
 		}
 	}
@@ -41,6 +50,8 @@ func AddRecordToDB(r models.Record) (err error) {
 	//записывает строку в файл
 	_, err = file.WriteString(record)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка записи в файл: %v", err)
+		backup.WriteLog(msg)
 		return fmt.Errorf("ошибка записи в файл: %v", err)
 	}
 	return nil
@@ -51,11 +62,15 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 	// Проверяем существует ли файл
 	if !fileExists(fileName) {
+		msg := fmt.Sprintf("Файл не существует: %s", fileName)
+		backup.WriteLog(msg)
 		return nil, fmt.Errorf("файл не существует: %s", fileName)
 	}
 
 	file, err := os.Open(fileName)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+		backup.WriteLog(msg)
 		return records, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
 	defer file.Close()
@@ -71,6 +86,8 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		msg := fmt.Sprintf("Ошибка чтения файла: %v", err)
+		backup.WriteLog(msg)
 		return records, fmt.Errorf("ошибка чтения файла: %v", err)
 	} else if len(records) == 0 {
 		return nil, fmt.Errorf("отсутствуют записи")
@@ -83,11 +100,15 @@ func ReadAllRecords() (records []models.Record, err error) {
 
 	// Проверяем существует ли файл
 	if !fileExists(fileName) {
+		msg := fmt.Sprintf("Файл не существует: %s", fileName)
+		backup.WriteLog(msg)
 		return nil, fmt.Errorf("файл не существует: %s", fileName)
 	}
 
 	file, err := os.Open(fileName)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+		backup.WriteLog(msg)
 		return records, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
 	defer file.Close()
@@ -100,6 +121,8 @@ func ReadAllRecords() (records []models.Record, err error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		msg := fmt.Sprintf("Ошибка чтения файла: %v", err)
+		backup.WriteLog(msg)
 		return records, fmt.Errorf("ошибка чтения файла: %v", err)
 	}
 	return
@@ -109,6 +132,8 @@ func ReadAllRecords() (records []models.Record, err error) {
 func ShowPreviousEntry(chatID int64) (result string, err error) {
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка чтения записей: %v", err)
+		backup.WriteLog(msg)
 		return result, err
 	}
 	//поиск последней неудаленной записи
@@ -158,7 +183,8 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 
 	_, err = file.WriteAt([]byte(recordStr), int64(positionOfAll)*int64(len(recordStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil {
-		panic(err)
+		msg := fmt.Sprintf("Ошибка перезаписи статуса записи в файле: %v", err)
+		backup.WriteLog(msg)
 	}
 	return nil
 }
@@ -196,6 +222,8 @@ func FindLastPosition(chatID int64, records []models.Record, deleted int) (recor
 func DiffWeight(chatID int64) (weight float64, err error) {
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка чтения записей: %v", err)
+		backup.WriteLog(msg)
 		return 0.0, err
 	}
 
@@ -211,6 +239,8 @@ func DiffWeight(chatID int64) (weight float64, err error) {
 func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err error) {
 	records, err := ReadRecords(int(chatID))
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка чтения записей: %v", err)
+		backup.WriteLog(msg)
 		return nil, err
 	} else if len(records) == 0 {
 		return nil, fmt.Errorf("отсутствуют записи")

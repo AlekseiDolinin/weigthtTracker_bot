@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"weightTrack_bot/backup"
 	"weightTrack_bot/models"
 	"weightTrack_bot/parse"
 )
@@ -18,11 +19,15 @@ func AddUserToDB(r models.User) (err error) {
 	if fileExists(fileNameUsers) { //если существует - открываем
 		file, err = os.OpenFile(fileNameUsers, os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
+			msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+			backup.WriteLog(msg)
 			return fmt.Errorf("ошибка открытия файла: %v", err)
 		}
 	} else { //если не существует - создаем
 		file, err = os.Create(fileNameUsers)
 		if err != nil {
+			msg := fmt.Sprintf("Ошибка создания файла: %v", err)
+			backup.WriteLog(msg)
 			return fmt.Errorf("ошибка создания файла: %v", err)
 		}
 	}
@@ -34,6 +39,8 @@ func AddUserToDB(r models.User) (err error) {
 	i, err := file.WriteString(record)
 
 	if err != nil || i != 26 {
+		msg := fmt.Sprintf("Ошибка записи нового пользователя: %v", err)
+		backup.WriteLog(msg)
 		return fmt.Errorf("ошибка записи нового пользователя: %v", err)
 	}
 	return nil
@@ -44,11 +51,15 @@ func ReadUser(chatID int64) (user models.User, err error) {
 
 	// Проверяем существует ли файл
 	if !fileExists(fileNameUsers) {
+		msg := fmt.Sprintf("Файл не существует: %s", fileNameUsers)
+		backup.WriteLog(msg)
 		return user, fmt.Errorf("файл не существует: %s", fileNameUsers)
 	}
 
 	file, err := os.Open(fileNameUsers)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+		backup.WriteLog(msg)
 		return user, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
 	defer file.Close()
@@ -64,6 +75,8 @@ func ReadUser(chatID int64) (user models.User, err error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		msg := fmt.Sprintf("Ошибка чтения файла: %v", err)
+		backup.WriteLog(msg)
 		return user, fmt.Errorf("ошибка чтения файла: %v", err)
 	}
 	return user, err
@@ -73,7 +86,8 @@ func ReadUser(chatID int64) (user models.User, err error) {
 func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 	file, err := os.OpenFile(fileNameUsers, os.O_RDWR, 0644)
 	if err != nil {
-		panic(err)
+		msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
+		backup.WriteLog(msg)
 	}
 	defer file.Close()
 
@@ -90,6 +104,8 @@ func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 
 	i, err := file.WriteAt([]byte(userStr), int64(position)*int64(len(userStr))-int64(len(userStr))) // смещение: произведение длинны строки на количество строк
 	if err != nil || i != 26 {
+		msg := fmt.Sprintf("Ошибка обновления записи пользователя: %v", err)
+		backup.WriteLog(msg)
 		return fmt.Errorf("ошибка обновления записи пользователя: %v", err)
 	}
 	return nil
@@ -99,11 +115,15 @@ func UpdateUser(chatID int64, user models.User, age int, height float64) error {
 func FindUserPosition(chatID int64) (user models.User, position int, err error) {
 	// Проверяем существует ли файл
 	if !fileExists(fileNameUsers) {
+		msg := fmt.Sprintf("Файл не существует: %s", fileNameUsers)
+		backup.WriteLog(msg)
 		return user, -1, fmt.Errorf("файл не существует: %s", fileNameUsers)
 	}
 
 	file, err := os.Open(fileNameUsers)
 	if err != nil {
+		msg := fmt.Sprintf("Ошибка открытия файла %s: %v", fileNameUsers, err)
+		backup.WriteLog(msg)
 		return user, -1, fmt.Errorf("ошибка открытия файла: %v", err)
 	}
 	defer file.Close()
