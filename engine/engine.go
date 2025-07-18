@@ -25,7 +25,6 @@ type UserState struct {
 	WeightInput     float64
 	HeightInput     float64
 	AgeInput        int64
-	FeedBackInput   string
 }
 
 // Reset сбрасывает все флаги ввода (IsAgeInput, IsHeightInput, IsWeightInput) в false.
@@ -107,7 +106,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		state.IsWeightInput = true
 		msg := tgbotapi.NewMessage(chatID, "Введите вес в килограммах")
 		bot.Send(msg)
-	case state.IsWeightInput && state.WeightInput > 0 && (!state.IsAgeInput || !state.IsHeightInput):
+	case state.IsWeightInput && state.WeightInput > 0:
 		if state.WeightInput > 999.00 {
 			preMsg := fmt.Sprintf("Вы ввели %.2f\nВес не может быть больше 999 кг", state.WeightInput)
 			msg := tgbotapi.NewMessage(chatID, preMsg)
@@ -144,6 +143,41 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		}
 		msg := tgbotapi.NewMessage(chatID, preMsg)
 		bot.Send(msg)
+		state.Reset()
+	case strings.EqualFold(text, "/show_height_age"):
+		user, position, err := storage.FindUserPosition(chatID)
+		if err != nil {
+			msg := tgbotapi.NewMessage(chatID, "Ошибка чтения данных")
+			bot.Send(msg)
+			state.Reset()
+			return
+		}
+
+		var (
+			edit_height string
+			edit_age    string
+		)
+
+		if user.GetHeight() == 0 {
+			edit_height = "рост не указан: указать рост - /edit_height\n"
+		} else {
+			edit_height = fmt.Sprintf("Рост %.2f см\n", user.GetHeight())
+		}
+		if user.GetAge() == 0 {
+			edit_age = "возраст не указан: указать возраст - /edit_age\n"
+		} else {
+			age := user.GetAge()
+			edit_age = fmt.Sprintf("Возраст %d %s\n", age, parse.DeclensionAge(age))
+		}
+		if position != -1 {
+			preMsg := fmt.Sprintf("Ваши данные:\n%s%s", edit_height, edit_age)
+			msg := tgbotapi.NewMessage(chatID, preMsg)
+			bot.Send(msg)
+
+		} else {
+			msg := tgbotapi.NewMessage(chatID, "Вы еще не указывали свой рост и возраст")
+			bot.Send(msg)
+		}
 		state.Reset()
 	case strings.EqualFold(text, "/show_bmi"):
 		var save_weight string
@@ -296,25 +330,36 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 			return
 		}
 		user, position, err := storage.FindUserPosition(chatID)
-		if position != -1 && err == nil {
+		if err != nil {
+			preMsg := fmt.Sprintf("Ошибка %v\n", err)
+			msg := tgbotapi.NewMessage(chatID, preMsg)
+			bot.Send(msg)
+			state.Reset()
+			return
+		}
+
+		if position != -1 {
 			err := storage.UpdateUser(chatID, user, int(state.AgeInput), user.GetHeight())
 			if err != nil {
-				fmt.Printf("ошибка %v\n", err)
-			} else {
-				preMsg := fmt.Sprintf("Ваш возраст %2d лет(года) записан\n", state.AgeInput)
+				preMsg := fmt.Sprintf("Ошибка %v\n", err)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
+				state.Reset()
+				return
 			}
 		} else {
 			err := storage.AddUserToDB(models.NewUser(chatID, int(state.AgeInput), state.HeightInput))
 			if err != nil {
-				fmt.Println("ошибка добавления возраста пользователя")
-			} else {
-				preMsg := fmt.Sprintf("Ваш возраст %2d лет(года) записан\n", state.AgeInput)
+				preMsg := fmt.Sprintf("Ошибка %v\n", err)
 				msg := tgbotapi.NewMessage(chatID, preMsg)
 				bot.Send(msg)
+				state.Reset()
+				return
 			}
 		}
+		preMsg := fmt.Sprintf("Ваш возраст %2d %s записан\n", state.AgeInput, parse.DeclensionAge(int(state.AgeInput)))
+		msg := tgbotapi.NewMessage(chatID, preMsg)
+		bot.Send(msg)
 		state.Reset()
 	case strings.EqualFold(text, "/delete"):
 		err := storage.DeleteRestorePreviousEntry(chatID, 0)
@@ -364,7 +409,6 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 
 		msg := tgbotapi.NewMessage(chatID, messages.FeedBack)
 		bot.Send(msg)
-
 	case state.IsFeedBackInput && text != "":
 		err := storage.AddFeedBack(models.NewFeedBack(time.Now(), chatID, text))
 		if err != nil {
