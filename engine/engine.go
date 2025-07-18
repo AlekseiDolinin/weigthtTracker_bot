@@ -217,7 +217,8 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 		}
 		state.Reset()
 	case strings.EqualFold(text, "/show_progress"):
-		period, err := storage.FindPeriod(chatID, 31)
+		period, err := storage.FindPeriod(chatID, 12)
+
 		if err != nil {
 			preMsg := fmt.Sprintf("Не удалось прочитать данные: %v\n", err)
 			msg := tgbotapi.NewMessage(chatID, preMsg)

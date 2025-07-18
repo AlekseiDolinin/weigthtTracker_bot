@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"image/color"
+	"strconv"
+	"time"
 	"weightTrack_bot/models"
 
 	"gonum.org/v1/plot"
@@ -19,28 +21,58 @@ type DataPoint struct {
 	X     float64
 	Y     float64
 	Label string
+	Date  time.Time
+}
+
+func (d DataPoint) GetDate() (t time.Time) {
+	return d.Date
 }
 
 // Конструктор структуры
-func NewDataPoint(x float64, y float64, l string) DataPoint {
-	return DataPoint{X: x, Y: y, Label: l}
+func NewDataPoint(x float64, y float64, l string, date time.Time) DataPoint {
+	return DataPoint{X: x, Y: y, Label: l, Date: date}
+}
+
+// Кастомный Tick.Marker для подмены чисел на даты
+type customTicks struct {
+	Labels []time.Time
+	Format string
+}
+
+func (ct customTicks) Ticks(min, max float64) []plot.Tick {
+	var ticks []plot.Tick
+	for i := 0; i < len(ct.Labels) && float64(i+1) <= max; i++ {
+		ticks = append(ticks, plot.Tick{
+			Value: float64(i + 1),                   // Позиция тика (1, 2, 3...)
+			Label: strconv.Itoa(ct.Labels[i].Day()), // Подпись (дата)
+		})
+	}
+	return ticks
 }
 
 // Преобразует данные из формата слайса структур []models.AvgRecordsPeriod в []DataPoint
 func FromARPtoDP(result []models.AvgRecordsPeriod) []DataPoint {
 	var data []DataPoint
 	xAxis := 1.0
+
 	for i := len(result) - 1; i >= 0; i-- {
 		var diffStr string
 		if i > 0 {
 			diff := result[i-1].GetWeight() - result[i].GetWeight()
 			diffStr = fmt.Sprintf("%+.2f", diff)
 		}
-		newPoint := NewDataPoint(xAxis, result[i].GetWeight(), diffStr)
+		newPoint := NewDataPoint(xAxis, result[i].GetWeight(), diffStr, result[i].GetTime())
 		data = append(data, newPoint)
 		xAxis += 1.0
 	}
 	return data
+}
+
+func GetDatesFromDataPoints(data []DataPoint) (dates []time.Time) {
+	for _, d := range data {
+		dates = append(dates, d.GetDate())
+	}
+	return
 }
 
 // Создает график
@@ -50,7 +82,7 @@ func MakePlot(result []models.AvgRecordsPeriod) ([]byte, error) {
 	p.Title.Text = "Динамика веса"
 	p.Title.TextStyle.Font.Size = font.Length(14)
 	p.Title.Padding = 10
-	p.X.Label.Text = "Дни"
+	p.X.Label.Text = "Дата"
 	p.Y.Label.Text = "Вес (кг)"
 	p.X.Padding = 5
 	p.Y.Padding = 5
@@ -74,6 +106,14 @@ func MakePlot(result []models.AvgRecordsPeriod) ([]byte, error) {
 	for i, d := range data {
 		points[i].X = d.X
 		points[i].Y = d.Y
+	}
+
+	dates := GetDatesFromDataPoints(data)
+
+	// Настраиваем кастомные метки для оси X
+	p.X.Tick.Marker = customTicks{
+		Labels: dates,
+		Format: "2006-01-02", // Формат даты: "15 Jan", "20 Feb" и т. д.
 	}
 
 	// Добавляем линию с настройками

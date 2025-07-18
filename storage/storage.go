@@ -221,7 +221,7 @@ func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err
 	lastEntry, _ := FindLastEntry(records, 0)
 	currentDate := lastEntry.GetTime()
 
-	for i := len(records) - 1; i >= 0 && period > 0; i-- {
+	for i := len(records) - 1; i >= 0 && (period > 0 || period <= -1); i-- {
 		if records[i].GetStatus() != 0 {
 			continue
 		}
@@ -238,6 +238,7 @@ func FindPeriod(chatID int64, period int) (result []models.AvgRecordsPeriod, err
 			dayAVG = records[i].GetWeight()
 			countDays = 1
 			period--
+
 		}
 	}
 	dayAVG /= float64(countDays)
