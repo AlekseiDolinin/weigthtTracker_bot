@@ -12,8 +12,8 @@ func TestDeclensionAge(t *testing.T) {
 	}{
 		// тестовые данные № 1
 		{
-			name:   "second decade",
-			values: []int{20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
+			name:   "first decade",
+			values: []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
 			want: []string{
 				"лет",
 				"год",
@@ -29,7 +29,41 @@ func TestDeclensionAge(t *testing.T) {
 		},
 		// тестовые данные № 2
 		{
+			name:   "second decade",
+			values: []int{10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+			want: []string{
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+			},
+		},
+		// тестовые данные № 3
+		{
 			name:   "third decade",
+			values: []int{20, 21, 22, 23, 24, 25, 26, 27, 28, 29},
+			want: []string{
+				"лет",
+				"год",
+				"года",
+				"года",
+				"года",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+				"лет",
+			},
+		},
+		// тестовые данные № 4
+		{
+			name:   "fourth decade",
 			values: []int{30, 31, 32, 33, 34, 35, 36, 37, 38, 39},
 			want: []string{
 				"лет",

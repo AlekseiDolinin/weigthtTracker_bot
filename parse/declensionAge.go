@@ -14,6 +14,11 @@ var y = map[int]string{
 }
 
 func DeclensionAge(age int) string {
-	year := age % 10
-	return y[year]
+	switch age {
+	case 11, 12, 13, 14:
+		return y[0]
+	default:
+		year := age % 10
+		return y[year]
+	}
 }
