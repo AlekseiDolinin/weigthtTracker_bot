@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"weightTrack_bot/backup"
@@ -12,6 +13,12 @@ import (
 )
 
 const fileName = "data/dataBase.txt"
+
+var (
+	dbMutex       sync.Mutex // для dataBase.txt
+	usersMutex    sync.Mutex // для users.txt
+	feedbackMutex sync.Mutex // для feedBack.txt
+)
 
 // проверка существования файла
 func fileExists(filename string) bool {
@@ -25,6 +32,10 @@ func fileExists(filename string) bool {
 
 // добавляет в файл f запись r
 func AddRecordToDB(r models.Record) (err error) {
+
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	var file *os.File
 
 	//проверяем существует ли файл
@@ -59,6 +70,9 @@ func AddRecordToDB(r models.Record) (err error) {
 
 // возвращает слайс записей из файла f
 func ReadRecords(chatID int) (records []models.Record, err error) {
+
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
 
 	// Проверяем существует ли файл
 	if !fileExists(fileName) {
@@ -97,6 +111,9 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 
 // возвращает слайс записей из файла f
 func ReadAllRecords() (records []models.Record, err error) {
+
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
 
 	// Проверяем существует ли файл
 	if !fileExists(fileName) {
@@ -161,16 +178,19 @@ func DeleteRestorePreviousEntry(chatID int64, delete int) error {
 		return err
 	}
 
+	record, positionOfAll := FindLastPosition(chatID, allRecords, delete)
+	if positionOfAll == -1 {
+		return fmt.Errorf("отсутствуют записи")
+	}
+
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	file, err := os.OpenFile(fileName, os.O_RDWR, 0644)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
-
-	record, positionOfAll := FindLastPosition(chatID, allRecords, delete)
-	if positionOfAll == -1 {
-		return fmt.Errorf("отсутствуют записи")
-	}
 
 	switch delete {
 	case 0:

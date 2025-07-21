@@ -12,6 +12,10 @@ const fileFeedBack = "data/feedBack.txt"
 
 // добавляет в файл f запись r
 func AddFeedBack(f models.FeedBack) (err error) {
+
+	feedbackMutex.Lock()
+	defer feedbackMutex.Unlock()
+
 	var file *os.File
 
 	//проверяем существует ли файл

@@ -13,6 +13,10 @@ const fileNameUsers = "data/users.txt"
 
 // добавляет в файл f запись r
 func AddUserToDB(r models.User) (err error) {
+
+	usersMutex.Lock()
+	defer usersMutex.Unlock()
+
 	var file *os.File
 
 	//проверяем существует ли файл
@@ -49,6 +53,9 @@ func AddUserToDB(r models.User) (err error) {
 // возвращает слайс записей из файла f
 func ReadUser(chatID int64) (user models.User, err error) {
 
+	usersMutex.Lock()
+	defer usersMutex.Unlock()
+
 	// Проверяем существует ли файл
 	if !fileExists(fileNameUsers) {
 		msg := fmt.Sprintf("Файл не существует: %s", fileNameUsers)
@@ -84,6 +91,10 @@ func ReadUser(chatID int64) (user models.User, err error) {
 
 // обновляет информацию о пользователе
 func UpdateUser(chatID int64, user models.User, age int, height float64) error {
+
+	usersMutex.Lock()
+	defer usersMutex.Unlock()
+
 	file, err := os.OpenFile(fileNameUsers, os.O_RDWR, 0644)
 	if err != nil {
 		msg := fmt.Sprintf("Ошибка открытия файла: %v", err)
