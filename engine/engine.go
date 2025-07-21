@@ -150,7 +150,7 @@ func Engine(update tgbotapi.Update, bot *tgbotapi.BotAPI, wg *sync.WaitGroup) {
 	case strings.EqualFold(text, "/show_height_age"):
 		user, position, err := storage.FindUserPosition(chatID)
 		if err != nil {
-			msg := tgbotapi.NewMessage(chatID, "Ошибка чтения данных")
+			msg := tgbotapi.NewMessage(chatID, "Ошибка: пользователь не найден")
 			backup.WriteLog(fmt.Sprintf("Ошибка чтения данных: %v", err))
 			bot.Send(msg)
 			state.Reset()

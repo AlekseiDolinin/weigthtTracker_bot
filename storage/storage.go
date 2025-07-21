@@ -78,7 +78,7 @@ func ReadRecords(chatID int) (records []models.Record, err error) {
 	if !fileExists(fileName) {
 		msg := fmt.Sprintf("Файл не существует: %s", fileName)
 		backup.WriteLog(msg)
-		return nil, fmt.Errorf("файл не существует: %s", fileName)
+		return nil, fmt.Errorf("отсутствуют записи")
 	}
 
 	file, err := os.Open(fileName)
@@ -119,7 +119,7 @@ func ReadAllRecords() (records []models.Record, err error) {
 	if !fileExists(fileName) {
 		msg := fmt.Sprintf("Файл не существует: %s", fileName)
 		backup.WriteLog(msg)
-		return nil, fmt.Errorf("файл не существует: %s", fileName)
+		return nil, fmt.Errorf("запись не найдена")
 	}
 
 	file, err := os.Open(fileName)

@@ -60,7 +60,7 @@ func ReadUser(chatID int64) (user models.User, err error) {
 	if !fileExists(fileNameUsers) {
 		msg := fmt.Sprintf("Файл не существует: %s", fileNameUsers)
 		backup.WriteLog(msg)
-		return user, fmt.Errorf("файл не существует: %s", fileNameUsers)
+		return user, fmt.Errorf("записи не найдены")
 	}
 
 	file, err := os.Open(fileNameUsers)
